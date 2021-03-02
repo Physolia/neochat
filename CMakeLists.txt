@@ -123,6 +123,9 @@ if(ANDROID)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/android/version.gradle.in ${CMAKE_BINARY_DIR}/version.gradle)
 endif()
 
+include(FindPkgConfig)
+pkg_check_modules(GSTREAMER IMPORTED_TARGET gstreamer-sdp-1.0>1.18 gstreamer-webrtc-1.0>=1.18)
+
 install(FILES org.kde.neochat.desktop DESTINATION ${KDE_INSTALL_APPDIR})
 install(FILES org.kde.neochat.appdata.xml DESTINATION ${KDE_INSTALL_METAINFODIR})
 install(FILES org.kde.neochat.svg DESTINATION ${KDE_INSTALL_FULL_ICONDIR}/hicolor/scalable/apps)

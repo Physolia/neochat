@@ -36,6 +36,8 @@ add_executable(neochat
     blurhash.cpp
     blurhashimageprovider.cpp
     joinrulesevent.cpp
+    callmanager.cpp
+    calldevices.cpp
     ../res.qrc
 )
 
