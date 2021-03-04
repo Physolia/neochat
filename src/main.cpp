@@ -74,6 +74,7 @@
 #include "colorschemer.h"
 #endif
 #include "calldevices.h"
+#include "callmanager.h"
 
 using namespace Quotient;
 
@@ -182,6 +183,7 @@ int main(int argc, char *argv[])
     qmlRegisterSingletonInstance("org.kde.neochat", 1, 0, "CommandModel", new CommandModel(&app));
     qmlRegisterSingletonInstance("org.kde.neochat", 1, 0, "AccountRegistry", &Quotient::AccountRegistry::instance());
     qmlRegisterSingletonInstance("org.kde.neochat", 1, 0, "CallDevices", &CallDevices::instance());
+    qmlRegisterSingletonInstance("org.kde.neochat", 1, 0, "CallManager", &CallManager::instance());
     qmlRegisterType<ActionsHandler>("org.kde.neochat", 1, 0, "ActionsHandler");
     qmlRegisterType<ChatDocumentHandler>("org.kde.neochat", 1, 0, "ChatDocumentHandler");
     qmlRegisterType<SpellcheckHighlighter>("org.kde.neochat", 1, 0, "SpellcheckHighlighter");
@@ -198,6 +200,7 @@ int main(int argc, char *argv[])
     qmlRegisterUncreatableType<RoomMessageEvent>("org.kde.neochat", 1, 0, "RoomMessageEvent", "ENUM");
     qmlRegisterUncreatableType<NeoChatRoomType>("org.kde.neochat", 1, 0, "NeoChatRoomType", "ENUM");
     qmlRegisterUncreatableType<UserType>("org.kde.neochat", 1, 0, "UserType", "ENUM");
+    qmlRegisterUncreatableType<CallSession>("org.kde.neochat", 1, 0, "CallSession", "ENUM");
 
     qRegisterMetaType<User *>("User*");
     qRegisterMetaType<User *>("const User*");

@@ -44,6 +44,21 @@ Kirigami.ApplicationWindow {
         source: Qt.resolvedUrl("qrc:/imports/NeoChat/Menu/GlobalMenu.qml")
     }
 
+    Connections {
+        target: CallManager
+
+        function onHasInviteChanged() {
+            if(CallManager.hasInvite) {
+                pageStack.push("qrc:/imports/NeoChat/Page/CallPage.qml")
+            }
+        }
+        function onIsInvitingChanged() {
+            if(CallManager.isInviting) {
+                pageStack.push("qrc:/imports/NeoChat/Page/CallPage.qml")
+            }
+        }
+    }
+
     // This timer allows to batch update the window size change to reduce
     // the io load and also work around the fact that x/y/width/height are
     // changed when loading the page and overwrite the saved geometry from

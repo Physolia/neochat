@@ -35,6 +35,7 @@
 #include "stickerevent.h"
 #include "user.h"
 #include "utils.h"
+#include "callmanager.h"
 
 #include <KLocalizedString>
 
@@ -72,6 +73,9 @@ NeoChatRoom::NeoChatRoom(Connection *connection, QString roomId, JoinState joinS
             avatar_image = avatar(128);
         }
         NotificationsManager::instance().postInviteNotification(this, htmlSafeDisplayName(), htmlSafeMemberName(senderId), avatar_image);
+    });
+    connect(this, &Room::callEvent, this, [=](Room* room, const RoomEvent* event){
+        CallManager::instance().handleCallEvent(static_cast<NeoChatRoom *>(room), event);
     });
 }
 

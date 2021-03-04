@@ -38,6 +38,7 @@ add_executable(neochat
     joinrulesevent.cpp
     callmanager.cpp
     calldevices.cpp
+    callsession.cpp
     ../res.qrc
 )
 

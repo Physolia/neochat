@@ -39,8 +39,11 @@ public:
     void addDevice(GstDevice *device);
     void remove(const QString &name);
 
+    GstDevice *currentDevice() const;
+
 private:
     QList<AudioDevice> m_devices;
+    int m_currentAudioDevice = -1;
 };
 
 struct VideoDevice
@@ -75,6 +78,9 @@ public:
 
     void addDevice(GstDevice *device);
     void remove(const QString &name);
+
+    bool haveCamera() const {return true; /*TODO*/}
+    GstDevice *videoDevice(QPair<int, int> &resolution, QPair<int, int> &framerate);
 
 private:
     QList<VideoDevice> m_devices;

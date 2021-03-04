@@ -13,6 +13,7 @@
         <file>imports/NeoChat/Page/StartChatPage.qml</file>
         <file>imports/NeoChat/Page/ImageEditorPage.qml</file>
         <file>imports/NeoChat/Page/WelcomePage.qml</file>
+        <file>imports/NeoChat/Page/CallPage.qml</file>
         <file>imports/NeoChat/RoomSettings/General.qml</file>
         <file>imports/NeoChat/RoomSettings/Security.qml</file>
         <file>imports/NeoChat/RoomSettings/Categories.qml</file>

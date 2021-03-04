@@ -210,6 +210,11 @@ void AudioDevicesModel::addDevice(GstDevice *device)
     Q_EMIT beginInsertRows(QModelIndex(), m_devices.size(), m_devices.size());
     m_devices += AudioDevice{name, device};
     Q_EMIT endInsertRows();
+
+    //TODO remove this hack
+    if(name.contains("USB")) {
+        m_currentAudioDevice = m_devices.size()-1;
+    }
 }
 
 void VideoDevicesModel::addDevice(GstDevice *device)
@@ -290,4 +295,20 @@ void VideoDevicesModel::remove(const QString &name)
     Q_EMIT beginRemoveRows(QModelIndex(), i, i+1);
     m_devices.removeAt(i);
     Q_EMIT endRemoveRows();
+}
+
+GstDevice * AudioDevicesModel::currentDevice() const
+{
+    return m_devices[m_currentAudioDevice].device; //TODO make device selectable
+}
+
+GstDevice * VideoDevicesModel::videoDevice(QPair<int, int>& resolution, QPair<int, int>& framerate)
+{//TODO save as pair
+    auto res = m_devices[0].caps[0].resolution;
+    auto index = res.indexOf("x");
+    resolution = qMakePair(res.left(index).toInt(), res.mid(index+1).toInt());
+    auto fr = m_devices[0].caps[0].resolution;
+    index = fr.indexOf("/");
+    framerate = qMakePair(fr.left(index).toInt(), fr.mid(index+1).toInt());
+    return m_devices[0].device;
 }
