@@ -1,6 +1,8 @@
-/* SPDX-FileCopyrightText: 2021 Tobias Fella <fella@posteo.de>
+/**
+ * SPDX-FileCopyrightText: 2021 Tobias Fella <fella@posteo.de>
+ * SPDX-FileCopyrightText: 2020-2021 Nheko Authors
  *
- * SPDX-License-Identifier: GPL-2.0-or-later
+ * SPDX-License-Identifier: GPL-3.0-only
  */
 
 #pragma once
