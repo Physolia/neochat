@@ -36,6 +36,7 @@ add_executable(neochat
     blurhash.cpp
     blurhashimageprovider.cpp
     joinrulesevent.cpp
+    registration.cpp
     ../res.qrc
 )
 
@@ -62,7 +63,11 @@ if(NOT ANDROID)
 endif()
 
 target_include_directories(neochat PRIVATE ${CMAKE_BINARY_DIR})
+<<<<<<< HEAD
 target_link_libraries(neochat PRIVATE Qt::Quick Qt::Qml Qt::Gui Qt::Network Qt::QuickControls2 KF5::I18n KF5::Kirigami2 KF5::Notifications KF5::ConfigCore KF5::ConfigGui KF5::CoreAddons Quotient cmark::cmark ${QTKEYCHAIN_LIBRARIES} QCoro::QCoro)
+=======
+target_link_libraries(neochat PRIVATE Qt::Quick Qt::Qml Qt::Gui Qt::Network Qt::QuickControls2 Qt::WebView KF5::I18n KF5::Kirigami2 KF5::Notifications KF5::ConfigCore KF5::ConfigGui KF5::CoreAddons Quotient cmark::cmark ${QTKEYCHAIN_LIBRARIES})
+>>>>>>> 8b058ae (Implement in-app account registration)
 kconfig_add_kcfg_files(neochat GENERATE_MOC neochatconfig.kcfgc)
 
 if(NEOCHAT_FLATPAK)
@@ -110,6 +115,7 @@ if(ANDROID)
         "org.kde.neochat"
         "preferences-system-users"
         "preferences-desktop-theme-global"
+        "checkmark"
     )
 else()
     target_link_libraries(neochat PRIVATE Qt5::Widgets KF5::KIOWidgets)
