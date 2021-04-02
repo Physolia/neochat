@@ -133,9 +133,18 @@ Item {
                 }
 
                 MouseArea {
+                    id: mouseArea
                     anchors.fill: parent
+                    hoverEnabled: true
                     onClicked: userDetailDialog.createObject(QQC2.ApplicationWindow.overlay, {"room": currentRoom, "user": author.object, "displayName": author.displayName, "avatarMediaId": author.avatarMediaId, "avatarUrl": author.avatarUrl}).open()
                     cursorShape: Qt.PointingHandCursor
+                }
+
+                Rectangle {
+                    anchors.fill: parent
+                    color: "#33222222"
+                    visible: mouseArea.containsMouse
+                    radius: width / 2
                 }
             }
 
