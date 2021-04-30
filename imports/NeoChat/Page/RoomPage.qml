@@ -386,9 +386,7 @@ Kirigami.ScrollablePage {
 
                     innerObject: TextDelegate {
                         isEmote: true
-                        Layout.fillWidth: true
-  
-                       Layout.rightMargin: Kirigami.Units.largeSpacing
+                        Layout.rightMargin: Kirigami.Units.largeSpacing
                         Layout.leftMargin: Kirigami.Units.largeSpacing
                         Layout.bottomMargin: Kirigami.Units.largeSpacing * 2
                         TapHandler {
@@ -413,7 +411,6 @@ Kirigami.ScrollablePage {
                     hoverComponent: hoverActions
 
                     innerObject: TextDelegate {
-                        Layout.fillWidth: true
                         Layout.rightMargin: Kirigami.Units.largeSpacing
                         Layout.bottomMargin: Kirigami.Units.largeSpacing
                         Layout.leftMargin: Kirigami.Units.largeSpacing
@@ -438,7 +435,6 @@ Kirigami.ScrollablePage {
 
                     hoverComponent: hoverActions
                     innerObject: TextDelegate {
-                        Layout.fillWidth: true
                         Layout.rightMargin: Kirigami.Units.largeSpacing
                         Layout.leftMargin: Kirigami.Units.largeSpacing
                         Layout.bottomMargin: Kirigami.Units.largeSpacing * 2
