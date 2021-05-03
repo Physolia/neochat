@@ -39,6 +39,7 @@
 #include "csapi/joining.h"
 #include "csapi/leaving.h"
 #include "devicesmodel.h"
+#include "emojiformatter.h"
 #include "emojimodel.h"
 #include "filetypesingleton.h"
 #include "login.h"
@@ -178,6 +179,9 @@ int main(int argc, char *argv[])
         Q_UNUSED(scriptEngine);
         Q_UNUSED(engine2);
         return new CommandModel();
+    });
+    qmlRegisterSingletonType<EmojiFormatter>("org.kde.neochat", 1, 0, "EmojiFormatter", [](QQmlEngine *, QJSEngine *) -> QObject * {
+        return new EmojiFormatter();
     });
     qmlRegisterType<SortFilterRoomListModel>("org.kde.neochat", 1, 0, "SortFilterRoomListModel");
     qmlRegisterType<DevicesModel>("org.kde.neochat", 1, 0, "DevicesModel");

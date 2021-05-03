@@ -60,6 +60,12 @@ set_package_properties(Qt5Keychain PROPERTIES
     PURPOSE "Secure storage of account secrets"
 )
 
+find_package(ICU 61.0 COMPONENTS uc)
+set_package_properties(ICU PROPERTIES
+    TYPE REQUIRED
+    PURPOSE "Unicode library"
+)
+
 if(ANDROID)
     find_package(OpenSSL)
     set_package_properties(OpenSSL PROPERTIES

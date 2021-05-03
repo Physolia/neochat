@@ -364,7 +364,7 @@ Kirigami.ScrollablePage {
                     hoverComponent: hoverActions
 
                     innerObject: TextDelegate {
-                        isEmote: true
+                        isSlashMe: true
                         Layout.fillWidth: Config.compactLayout
                         Layout.maximumWidth: emoteContainer.bubbleMaxWidth
                         Layout.rightMargin: Kirigami.Units.largeSpacing

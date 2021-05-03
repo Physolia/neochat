@@ -16,9 +16,23 @@ Flow {
         delegate: AbstractButton {
             width: Math.max(implicitWidth, height)
 
-            contentItem: Label {
-                horizontalAlignment: Text.AlignHCenter
-                text: modelData.reaction + " " + modelData.count
+            contentItem: RowLayout {
+                Label {
+                    font.family: /^(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])+$/.test(modelData.reaction) ? "emoji" : countLabel.font.family
+                    text: modelData.reaction
+
+                    verticalAlignment: Qt.AlignVCenter
+                    Layout.fillHeight: true
+                    Layout.leftMargin: Kirigami.Units.smallSpacing
+                }
+                Label {
+                    id: countLabel
+                    text: modelData.count
+
+                    verticalAlignment: Qt.AlignVCenter
+                    Layout.fillHeight: true
+                    Layout.rightMargin: Kirigami.Units.smallSpacing
+                }
             }
 
             padding: Kirigami.Units.smallSpacing

@@ -11,34 +11,17 @@ import org.kde.kirigami 2.15 as Kirigami
 TextEdit {
     id: contentLabel
 
-    readonly property var isEmoji: /^(<span style='.*'>)?(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])+(<\/span>)?$/
+    Layout.margins: Kirigami.Units.largeSpacing
+    Layout.topMargin: 0
 
-    property bool isEmote: false
+    property bool isSlashMe: false
     property string textMessage: model.display
 
-    text: "<style>
-table {
-    width:100%;
-    border-width: 1px;
-    border-collapse: collapse;
-    border-style: solid;
-}
-table th,
-table td {
-    border: 1px solid black;
-    padding: 3px;
-}
-pre {
-    white-space: pre-wrap
-}
-a{
-    color: " + Kirigami.Theme.linkColor + ";
-    text-decoration: none;
-}
-</style>" + (isEmote ? "* <a href='https://matrix.to/#/" + author.id + "' style='color: " + author.color + "'>" + author.displayName + "</a> " : "") + textMessage + (isEdited ? (" <span style=\"color: " + Kirigami.Theme.disabledTextColor + "\">" + "<span style='font-size: " + Kirigami.Theme.defaultFont.pixelSize +"px'>" + i18n(" (edited)") + "</span>") : "")
+    Component.onCompleted: EmojiFormatter.attach(contentLabel.textDocument)
+
+    text: textMessage + (isEdited ? i18n(" (edited)") : "")
 
     color: Kirigami.Theme.textColor
-    font.pointSize: model.reply === undefined && isEmoji.test(model.display) ? Kirigami.Theme.defaultFont.pointSize * 4 : Kirigami.Theme.defaultFont.pointSize
     selectByMouse: !Kirigami.Settings.isMobile
     readOnly: true
     wrapMode: Text.WordWrap
