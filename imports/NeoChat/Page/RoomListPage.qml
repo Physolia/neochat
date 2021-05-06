@@ -70,6 +70,11 @@ Kirigami.ScrollablePage {
             }
         }
 
+        model: RoomListModel {
+            id: roomListModel
+            connection: page.activeConnection
+        }
+        /*
         model: SortFilterRoomListModel {
             id: sortFilterRoomListModel
             sourceModel: RoomListModel {
@@ -80,7 +85,7 @@ Kirigami.ScrollablePage {
             onLayoutChanged: {
                 listView.currentIndex = sortFilterRoomListModel.mapFromSource(itemSelection.currentIndex).row
             }
-        }
+        }*/
 
         section.property: sortFilterRoomListModel.filterText.length === 0 && !Config.mergeRoomList ? "category" : null
         section.delegate: Kirigami.ListSectionHeader {

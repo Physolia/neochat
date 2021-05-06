@@ -34,12 +34,30 @@ bool useUnityCounter()
 }
 #endif
 
+
+RoomType::Types roomToRoomType(const NeoChatRoom *room)
+{
+    if (room->joinState() == JoinState::Invite) {
+        return RoomType::Invited;
+    }
+    if (room->isFavourite()) {
+        return RoomType::Favorite;
+    }
+    if (room->isDirectChat()) {
+        return RoomType::Direct;
+    }
+    if (room->isLowPriority()) {
+        return RoomType::Deprioritized;
+    }
+    return RoomType::Normal;
+}
+
 RoomListModel::RoomListModel(QObject *parent)
-    : QAbstractListModel(parent)
+    : QAbstractItemModel(parent)
 {
     const auto collapsedSections = NeoChatConfig::collapsedSections();
     for (auto collapsedSection : collapsedSections) {
-        m_categoryVisibility[collapsedSection] = false;
+        m_categoryVisibility[static_cast<RoomType::Types>(collapsedSection)] = false;
     }
 
 #ifndef Q_OS_ANDROID
@@ -122,6 +140,7 @@ void RoomListModel::doResetModel()
 {
     beginResetModel();
     m_rooms.clear();
+    m_roomsNested.clear();
     const auto rooms = m_connection->allRooms();
     for (const auto &room : rooms) {
         doAddRoom(room);
@@ -139,6 +158,11 @@ void RoomListModel::doAddRoom(Room *r)
 {
     if (auto room = static_cast<NeoChatRoom *>(r)) {
         m_rooms.append(room);
+        RoomType::Types roomType = roomToRoomType(room);
+        if (!m_roomsNested.contains(roomType)) {
+            m_roomsNested[roomType] = QList<NeoChatRoom *>();
+        }
+        m_roomsNested[roomType].append(room);
         connectRoomSignals(room);
         Q_EMIT roomAdded(room);
     } else {
@@ -284,7 +308,8 @@ void RoomListModel::updateRoom(Room *room, Room *prev)
             m_rooms.replace(row, newRoom);
             connectRoomSignals(newRoom);
         }
-        Q_EMIT dataChanged(index(row), index(row));
+        // TODO
+        Q_EMIT dataChanged(index(row, 0), index(row, 0));
     } else {
         beginInsertRows(QModelIndex(), m_rooms.count(), m_rooms.count());
         doAddRoom(newRoom);
@@ -317,79 +342,121 @@ int RoomListModel::rowCount(const QModelIndex &parent) const
 QVariant RoomListModel::data(const QModelIndex &index, int role) const
 {
     if (!index.isValid()) {
-        return QVariant();
+        return {};
     }
 
-    if (index.row() >= m_rooms.count()) {
-        qDebug() << "UserListModel: something wrong here...";
-        return QVariant();
+    if (!index.parent().isValid()) {
+        // Category
+        switch (role) {
+        case NameRole:
+            return categoryName(m_currentCategories[index.row()]);
+        }
+        return {};
     }
+
     NeoChatRoom *room = m_rooms.at(index.row());
-    if (role == NameRole) {
+    switch (role) {
+    case NameRole:
         return !room->name().isEmpty() ? room->name() : room->displayName();
-    }
-    if (role == DisplayNameRole) {
+    case DisplayNameRole:
         return room->displayName();
-    }
-    if (role == AvatarRole) {
+    case AvatarRole:
         return room->avatarMediaId();
-    }
-    if (role == TopicRole) {
+    case TopicRole:
         return room->topic();
-    }
-    if (role == CategoryRole) {
-        if (room->joinState() == JoinState::Invite) {
-            return RoomType::Invited;
-        }
-        if (room->isFavourite()) {
-            return RoomType::Favorite;
-        }
-        if (room->isDirectChat()) {
-            return RoomType::Direct;
-        }
-        if (room->isLowPriority()) {
-            return RoomType::Deprioritized;
-        }
-        return RoomType::Normal;
-    }
-    if (role == UnreadCountRole) {
+    case CategoryRole:
+        return roomToRoomType(room);
+    case UnreadCountRole:
         return room->unreadCount();
-    }
-    if (role == NotificationCountRole) {
+    case NotificationCountRole:
         return room->notificationCount();
-    }
-    if (role == HighlightCountRole) {
+    case HighlightCountRole:
         return room->highlightCount();
-    }
-    if (role == LastEventRole) {
+    case LastEventRole:
         return room->lastEventToString();
-    }
-    if (role == LastActiveTimeRole) {
+    case LastActiveTimeRole:
         return room->lastActiveTime();
-    }
-    if (role == JoinStateRole) {
+    case JoinStateRole:
         if (!room->successorId().isEmpty()) {
             return QStringLiteral("upgraded");
         }
         return toCString(room->joinState());
-    }
-    if (role == CurrentRoomRole) {
+    case CurrentRoomRole:
         return QVariant::fromValue(room);
+    default:
+        return {};
     }
-    if (role == CategoryVisibleRole) {
-        return m_categoryVisibility.value(data(index, CategoryRole).toInt(), true);
-    }
-    return QVariant();
 }
 
 void RoomListModel::refresh(NeoChatRoom *room, const QVector<int> &roles)
 {
+    RoomType::Types roomType = roomToRoomType(room);
+
+    if (!m_roomsNested.contains(roomType) || !m_roomsNested[roomType].contains(room)) {
+        // The room's category changed => remove it from the old category...
+        for (int categoryIndex = 0; categoryIndex != m_currentCategories.count(); ++categoryIndex) {
+            RoomType::Types oldRoomType = m_currentCategories[categoryIndex];
+            const auto &rooms = m_roomsNested[oldRoomType];
+            int roomIndex = 0;
+            for (; roomIndex < rooms.count(); ++roomIndex) {
+                if (rooms[roomIndex] == room) {
+                    break;
+                }
+            }
+
+            if (roomIndex != rooms.count()) {
+                // we found old location at (categoryIndex, roomIndex) => make it persistent
+                QPersistentModelIndex oldIndex(index(index(categoryIndex, 0), roomIndex));
+
+                // check if we need to display a new category
+                if (!m_currentCategories.contains(roomType)) {
+                    for (int i = 0; i <= m_currentCategories.count(); i++) {
+                        if (i == m_currentCategories.count() || m_currentCategories[i] > roomType) {
+                            // last index or bigger than previous category number
+                            beginInsertRows({}, i, 0);
+                            m_roomsNested[roomType] = {};
+                            m_currentCategories.insert(i, roomType);
+                            endInsertRows();
+                        }
+                    }
+                }
+
+                // find new index
+                int newParentIndex = 0;
+                for (; newParentIndex < m_currentCategories.count(); newParentIndex++) {
+                    if (m_currentCategories[newParentIndex] == roomType) {
+                        break;
+                    }
+                }
+                const int newChildIndex = m_roomsNested[roomType].count();
+
+                // finally move
+                beginMoveRows(index(oldIndex.parent().row(), 0), oldIndex.row(), oldIndex.row(),
+                              index(newParentIndex, 0), newChildIndex);
+
+
+                m_roomsNested[oldRoomType].removeAll(room);
+                m_roomsNested[roomType].append(room);
+                endMoveRows();
+
+                // check if we need to remove the old category
+                if (m_roomsNested[oldRoomType].isEmpty()) {
+                    beginMoveRows({}, oldIndex.parent().row(), oldIndex.parent().row());
+                    m_currentCategories.removeAll(oldRoomType);
+                    m_roomsNested[oldRoomType].clear();
+                }
+                qDebug() << "Moved room";
+                break;
+            }
+        }
+    }
+
     const auto it = std::find(m_rooms.begin(), m_rooms.end(), room);
     if (it == m_rooms.end()) {
         qCritical() << "Room" << room->id() << "not found in the room list";
         return;
     }
-    const auto idx = index(it - m_rooms.begin());
+    const auto idx = index(it - m_rooms.begin(), 0);
     Q_EMIT dataChanged(idx, idx, roles);
 }
 
@@ -410,6 +477,41 @@ QHash<int, QByteArray> RoomListModel::roleNames() const
     roles[CurrentRoomRole] = "currentRoom";
     roles[CategoryVisibleRole] = "categoryVisible";
     return roles;
+}
+
+QModelIndex RoomListModel::parent(const QModelIndex &child) const
+{
+    if (child.internalId()) {
+        return createIndex(child.internalId(), 0, nullptr);
+    }
+    return QModelIndex();
+}
+
+QModelIndex RoomListModel::index(int row, int column, const QModelIndex &parent) const
+{
+    if (parent.isValid()) {
+        return createIndex(row, column, (intptr_t)parent.row());
+    }
+    return createIndex(row, column, nullptr);
+}
+
+bool RoomListModel::hasChildren(const QModelIndex& parent) const
+{
+    if (parent.isValid()) {
+        return false;
+    }
+
+    const auto roomType = data(parent, CategoryRole).value<RoomType::Types>();
+    return m_currentCategories.contains(roomType);
+}
+
+int RoomListModel::rowCount(const QModelIndex &parent) const
+{
+    if (parent.isValid()) {
+        const auto roomType = data(parent, CategoryRole).value<RoomType::Types>();
+        return m_roomsNested[roomType].count();
+    }
+    return m_currentCategories.count();
 }
 
 QString RoomListModel::categoryName(int section)

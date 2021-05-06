@@ -8,7 +8,7 @@
 #include "neochatroom.h"
 #include "room.h"
 
-#include <QAbstractListModel>
+#include <QAbstractItemModel>
 
 using namespace Quotient;
 
@@ -27,7 +27,7 @@ public:
     Q_ENUM(Types)
 };
 
-class RoomListModel : public QAbstractListModel
+class RoomListModel : public QAbstractItemModel
 {
     Q_OBJECT
     Q_PROPERTY(Connection *connection READ connection WRITE setConnection NOTIFY connectionChanged)
@@ -51,6 +51,13 @@ public:
     };
     Q_ENUM(EventRoles)
 
+    enum Mode
+    {
+        ShowCategory,
+        ShowSimpleList
+    };
+    Q_ENUM(Mode)
+
     RoomListModel(QObject *parent = nullptr);
     ~RoomListModel() override;
 
@@ -63,7 +70,11 @@ public:
 
     Q_INVOKABLE [[nodiscard]] NeoChatRoom *roomAt(int row) const;
 
+    QModelIndex parent(const QModelIndex &index) const override;
+    QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
+    bool hasChildren(const QModelIndex& parent) const override;
     [[nodiscard]] QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+    [[nodiscard]] int columnCount(const QModelIndex &parent = QModelIndex()) const override;
     Q_INVOKABLE [[nodiscard]] int rowCount(const QModelIndex &parent = QModelIndex()) const override;
 
     [[nodiscard]] QHash<int, QByteArray> roleNames() const override;
@@ -88,9 +99,20 @@ private Q_SLOTS:
 
 private:
     Connection *m_connection = nullptr;
+    Mode m_mode = Mode::ShowCategory;
+
+    // Simple list of the rooms
     QList<NeoChatRoom *> m_rooms;
 
-    QMap<int, bool> m_categoryVisibility;
+    // Rooms by tags
+    QHash<RoomType::Types, QList<NeoChatRoom *>> m_roomsNested;
+
+    // Display the current categories displayed.
+    // This allows to make sure we have a stable index for each category.
+    // This is sorted.
+    QList<RoomType::Types> m_currentCategories;
+
+    QHash<RoomType::Types, bool> m_categoryVisibility;
 
     int m_notificationCount = 0;
 
