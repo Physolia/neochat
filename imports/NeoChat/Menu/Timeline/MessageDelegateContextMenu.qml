@@ -13,42 +13,39 @@ import NeoChat.Dialog 1.0
 Loader {
     id: loadRoot
 
-    required property var author
-    required property string message
-    required property string eventId
-    property string eventType: ""
-    property string formattedBody: ""
-    required property string source
+    required property var event
 
     property list<Kirigami.Action> actions: [
         Kirigami.Action {
             text: i18n("Edit")
             icon.name: "document-edit"
-            onTriggered: ChatBoxHelper.edit(message, formattedBody, eventId);
-            visible: eventType.length > 0 && author.id === Controller.activeConnection.localUserId && (eventType === "emote" || eventType === "message")
+            onTriggered: ChatBoxHelper.edit(event.message, event.formattedBody, event.eventId, event.reply ? event.reply.eventId : "");
+            visible: event.eventType.length > 0 && event.author.id === Controller.activeConnection.localUserId && (event.eventType === "emote" || event.eventType === "message")
         },
         Kirigami.Action {
             text: i18n("Reply")
             icon.name: "mail-replied-symbolic"
-            onTriggered: ChatBoxHelper.replyToMessage(eventId, message, author);
+            onTriggered: ChatBoxHelper.replyToMessage(event.eventId, event.message, event.author);
         },
         Kirigami.Action {
-            visible: author.id === currentRoom.localUser.id || currentRoom.canSendState("redact")
+            visible: event.author.id === currentRoom.localUser.id || currentRoom.canSendState("redact")
             text: i18n("Remove")
             icon.name: "edit-delete-remove"
             icon.color: "red"
-            onTriggered: currentRoom.redactEvent(eventId);
+            onTriggered: currentRoom.redactEvent(event.eventId);
         },
         Kirigami.Action {
             text: i18n("Copy")
             icon.name: "edit-copy"
-            onTriggered: Clipboard.saveText(message)
+            onTriggered: Clipboard.saveText(event.message)
         },
         Kirigami.Action {
             text: i18n("View Source")
             icon.name: "code-context"
             onTriggered: {
-                messageSourceSheet.createObject(page, {'sourceText': loadRoot.source}).open();
+                messageSourceSheet.createObject(page, {
+                    sourceText: event.source
+                }).open();
             }
         }
     ]
@@ -66,88 +63,6 @@ Loader {
                 }
             }
         }
-        /*
-        Kirigami.OverlaySheet {
-            id: root
-
-            parent: applicationWindow().overlay
-
-            leftPadding: 0
-            rightPadding: 0
-
-            header: Kirigami.Heading {
-                text: i18nc("@title:menu Message detail dialog", "Message detail")
-            }
-
-            contentItem: ColumnLayout {
-                spacing: 0
-                RowLayout {
-                    id: headerLayout
-                    Layout.fillWidth: true
-                    Layout.margins: Kirigami.Units.largeSpacing
-                    spacing: Kirigami.Units.largeSpacing
-                    Kirigami.Avatar {
-                        id: avatar
-                        source: author.avatarMediaId ? ("image://mxc/" + author.avatarMediaId) : ""
-                        Layout.preferredWidth: Kirigami.Units.gridUnit * 3
-                        Layout.preferredHeight: Kirigami.Units.gridUnit * 3
-                        Layout.alignment: Qt.AlignTop
-                        name: author.displayName
-                        color: author.color
-                    }
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        Kirigami.Heading {
-                            level: 3
-                            Layout.fillWidth: true
-                            text: author.displayName
-                            wrapMode: Text.WordWrap
-                        }
-                        QQC2.Label {
-                            text: message
-                            Layout.fillWidth: true
-                            Layout.maximumWidth: Kirigami.Units.gridUnit * 24
-                            wrapMode: Text.WordWrap
-
-                            onLinkActivated: RoomManager.openResource(link);
-                        }
-                    }
-                }
-                Kirigami.Separator {
-                    Layout.fillWidth: true
-                }
-                RowLayout {
-                    spacing: 0
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: Kirigami.Units.gridUnit * 2.5
-                    Repeater {
-                        model: ["👍", "👎️", "😄", "🎉", "🚀", "👀"]
-                        delegate: QQC2.ItemDelegate {
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-
-                            contentItem: QQC2.Label {
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
-
-                                font.pixelSize: 16
-                                font.family: "emoji"
-                                text: modelData
-
-                            }
-
-                            onClicked: {
-                                currentRoom.toggleReaction(eventId, modelData)
-                                loadRoot.item.close();
-                            }
-                        }
-                    }
-                }
-                Kirigami.Separator {
-                    Layout.fillWidth: true
-                }
-            }
-        }*/
     }
     Component {
         id: mobileMenu
@@ -175,7 +90,7 @@ Loader {
                     spacing: Kirigami.Units.largeSpacing
                     Kirigami.Avatar {
                         id: avatar
-                        source: author.avatarMediaId ? ("image://mxc/" + author.avatarMediaId) : ""
+                        source: event.author.avatarMediaId ? ("image://mxc/" + event.author.avatarMediaId) : ""
                         Layout.preferredWidth: Kirigami.Units.gridUnit * 3
                         Layout.preferredHeight: Kirigami.Units.gridUnit * 3
                         Layout.alignment: Qt.AlignTop
@@ -185,11 +100,11 @@ Loader {
                         Kirigami.Heading {
                             level: 3
                             Layout.fillWidth: true
-                            text: author.displayName
+                            text: event.author.displayName
                             wrapMode: Text.WordWrap
                         }
                         QQC2.Label {
-                            text: message
+                            text: event.message
                             Layout.fillWidth: true
                             wrapMode: Text.WordWrap
 
@@ -219,7 +134,7 @@ Loader {
                             }
 
                             onClicked: {
-                                currentRoom.toggleReaction(eventId, modelData);
+                                currentRoom.toggleReaction(event.eventId, modelData);
                                 loadRoot.item.close();
                             }
                         }

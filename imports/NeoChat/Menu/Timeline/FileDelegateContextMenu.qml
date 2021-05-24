@@ -32,7 +32,7 @@ MessageDelegateContextMenu {
                             Qt.openUrlExternally(progressInfo.localDir);
                         }
                     });
-                    currentRoom.downloadFile(eventId, StandardPaths.writableLocation(StandardPaths.CacheLocation) + "/" + eventId.replace(":", "_").replace("/", "_").replace("+", "_") + currentRoom.fileNameToDownload(eventId))
+                    currentRoom.downloadFile(root.event.eventId, StandardPaths.writableLocation(StandardPaths.CacheLocation) + "/" + root.event.eventId.replace(":", "_").replace("/", "_").replace("+", "_") + currentRoom.fileNameToDownload(root.event.eventId))
                 }
             }
         },
@@ -40,32 +40,34 @@ MessageDelegateContextMenu {
             text: i18n("Save As")
             icon.name: "document-save"
             onTriggered: {
-                var dialog = saveAsDialog.createObject(ApplicationWindow.overlay)
+                const dialog = saveAsDialog.createObject(ApplicationWindow.overlay)
                 dialog.open()
-                dialog.currentFile = dialog.folder + "/" + currentRoom.fileNameToDownload(eventId)
+                dialog.currentFile = `${dialog.folder}/${currentRoom.fileNameToDownload(root.event.eventId)}`
             }
         },
         Kirigami.Action {
             text: i18n("Reply")
             icon.name: "mail-replied-symbolic"
             onTriggered: {
-                ChatBoxHelper.replyToMessage(eventId, message, author);
+                ChatBoxHelper.replyToMessage(root.event.eventId, root.event.message, root.event.author);
             }
         },
         Kirigami.Action {
-            visible: author.id === currentRoom.localUser.id || currentRoom.canSendState("redact")
+            visible: root.event.author.id === currentRoom.localUser.id || currentRoom.canSendState("redact")
             text: i18n("Remove")
             icon.name: "edit-delete-remove"
             icon.color: "red"
             onTriggered: {
-                currentRoom.redactEvent(eventId);
+                currentRoom.redactEvent(root.event.eventId);
             }
         },
         Kirigami.Action {
             text: i18n("View Source")
             icon.name: "code-context"
             onTriggered: {
-                messageSourceSheet.createObject(root, {'sourceText': root.source}).open();
+                messageSourceSheet.createObject(root, {
+                    sourceText: root.event.source
+                }).open();
             }
         }
     ]
@@ -78,7 +80,7 @@ MessageDelegateContextMenu {
                 if (!currentFile) {
                     return;
                 }
-                currentRoom.downloadFile(eventId, currentFile)
+                currentRoom.downloadFile(root.event.eventId, currentFile)
             }
         }
     }

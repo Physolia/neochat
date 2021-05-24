@@ -46,8 +46,8 @@ public:
     void setAttachmentPath(const QString &attachmentPath);
     void setReplyUser(const QVariant &replyUser);
 
-    Q_INVOKABLE void replyToMessage(const QString &replyEventid, const QString &replyEvent, const QVariant &replyUser);
-    Q_INVOKABLE void edit(const QString &message, const QString &formattedBody, const QString &eventId);
+    Q_INVOKABLE void replyToMessage(const QString &replyEventId, const QString &replyEvent, const QVariant &replyUser);
+    Q_INVOKABLE void edit(const QString &message, const QString &formattedBody, const QString &eventId, const QString &replyEventId = QString());
     Q_INVOKABLE void clear();
     Q_INVOKABLE void clearEditReply();
     Q_INVOKABLE void clearAttachment();

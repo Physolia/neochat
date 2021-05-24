@@ -764,17 +764,36 @@ QVariant MessageEventModel::getLastLocalUserMessageEventId()
         if ((*it)->senderId() == m_currentRoom->localUser()->id()) {
             auto content = (*it)->contentJson();
 
+            if (content.contains("m.relates_to") && content["m.relates_to"].toObject().contains("event_id")) {
+                // This message is an edit event and not a real message. Skip it.
+                continue;
+            }
+
             if (content.contains("m.relates_to")) {
-                // the message has been edited once
-                // so we have to return the id of the related' message instead
-                targetMessage.insert("event_id", content["m.relates_to"].toObject()["event_id"].toString());
-                targetMessage.insert("body", content["formatted_body"].toString());
+                if (content["m.relates_to"].toObject().contains("m.in_reply_to")) {
+                    targetMessage.insert("reply_event_id", content["m.relates_to"].toObject()["m.in_reply_to"].toObject()["event_id"].toString());
+                } else {
+                    // TODO other type of special relationship
+                    targetMessage.insert("reply_event_id", QString());
+                }
+
+                targetMessage.insert("event_id", (*it)->id());
+                targetMessage.insert("message", m_currentRoom->eventToString(*e));
+
+                if (e->hasTextContent() && e->mimeType().name() != "text/plain") {
+                    targetMessage.insert("formatted_body", static_cast<const Quotient::EventContent::TextContent *>(e->content())->body);
+                }
+                qDebug() << targetMessage;
                 return targetMessage;
             }
 
             if (e->msgtype() == MessageEventType::Text) {
                 targetMessage.insert("event_id", (*it)->id());
-                targetMessage.insert("body", content["body"].toString());
+                targetMessage.insert("message", m_currentRoom->eventToString(*e));
+
+                if (e->hasTextContent() && e->mimeType().name() != "text/plain") {
+                    targetMessage.insert("formatted_body", static_cast<const Quotient::EventContent::TextContent *>(e->content())->body);
+                }
                 return targetMessage;
             }
         }

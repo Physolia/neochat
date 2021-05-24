@@ -198,7 +198,7 @@ Kirigami.ScrollablePage {
                 icon.name: "document-edit"
                 onClicked: {
                     if (hoverActions.showEdit) {
-                        ChatBoxHelper.edit(hoverActions.event.message, hoverActions.event.formattedBody, hoverActions.event.eventId)
+                        ChatBoxHelper.edit(hoverActions.event.message, hoverActions.event.formattedBody, hoverActions.event.eventId, hoverActions.event.reply ? hoverActions.event.reply.eventId : "")
                     }
                     chatBox.focusInputField();
                 }
@@ -358,11 +358,11 @@ Kirigami.ScrollablePage {
                         Layout.bottomMargin: Kirigami.Units.largeSpacing * 2
                         TapHandler {
                             acceptedButtons: Qt.RightButton
-                            onTapped: openMessageContext(author, model.message, eventId, toolTip, eventType, model.formattedBody)
+                            onTapped: openMessageContext(model)
                         }
                         TapHandler {
                             acceptedButtons: Qt.LeftButton
-                            onLongPressed: openMessageContext(author, model.message, eventId, toolTip, eventType, model.formattedBody)
+                            onLongPressed: openMessageContext(model)
                         }
                     }
                 }
@@ -385,11 +385,11 @@ Kirigami.ScrollablePage {
                         Layout.leftMargin: Config.showAvatarInTimeline ? Kirigami.Units.largeSpacing : 0
                         TapHandler {
                             acceptedButtons: Qt.RightButton
-                            onTapped: openMessageContext(author, model.message, eventId, toolTip, eventType, model.formattedBody)
+                            onTapped: openMessageContext(model)
                         }
                         TapHandler {
                             acceptedButtons: Qt.LeftButton
-                            onLongPressed: openMessageContext(author, model.message, eventId, toolTip, eventType, model.formattedBody)
+                            onLongPressed: openMessageContext(model)
                         }
                     }
                 }
@@ -430,11 +430,11 @@ Kirigami.ScrollablePage {
                         Layout.maximumHeight: Kirigami.Units.gridUnit * 20
                         TapHandler {
                             acceptedButtons: Qt.RightButton
-                            onTapped: openFileContext(author, model.display, eventId, toolTip, progressInfo, parent)
+                            onTapped: openFileContext(model, progressInfo, parent)
                         }
                         TapHandler {
                             acceptedButtons: Qt.LeftButton
-                            onLongPressed: openFileContext(author, model.display, eventId, toolTip, progressInfo, parent)
+                            onLongPressed: openFileContext(model, progressInfo, parent)
                             onTapped: {
                                 fullScreenImage.createObject(parent, {"filename": eventId, "localPath": currentRoom.urlToDownload(eventId)}).showFullScreen()
                             }
@@ -475,11 +475,11 @@ Kirigami.ScrollablePage {
                         Layout.maximumWidth: audioContainer.bubbleMaxWidth
                         TapHandler {
                             acceptedButtons: Qt.RightButton
-                            onTapped: openFileContext(author, model.display, eventId, toolTip, progressInfo, parent)
+                            onTapped: openFileContext(model, progressInfo, parent)
                         }
                         TapHandler {
                             acceptedButtons: Qt.LeftButton
-                            onLongPressed: openFileContext(author, model.display, eventId, toolTip, progressInfo, parent)
+                            onLongPressed: openFileContext(model, progressInfo, parent)
                         }
                     }
                 }
@@ -503,11 +503,11 @@ Kirigami.ScrollablePage {
 
                         TapHandler {
                             acceptedButtons: Qt.RightButton
-                            onTapped: openFileContext(author, model.display, eventId, toolTip, progressInfo, parent)
+                            onTapped: openFileContext(model, progressInfo, parent)
                         }
                         TapHandler {
                             acceptedButtons: Qt.LeftButton
-                            onLongPressed: openFileContext(author, model.display, eventId, toolTip, progressInfo, parent)
+                            onLongPressed: openFileContext(model, progressInfo, parent)
                         }
                     }
                 }
@@ -526,11 +526,11 @@ Kirigami.ScrollablePage {
                         Layout.maximumWidth: fileContainer.bubbleMaxWidth
                         TapHandler {
                             acceptedButtons: Qt.RightButton
-                            onTapped: openFileContext(author, model.display, eventId, toolTip, progressInfo, parent)
+                            onTapped: openFileContext(model, progressInfo, parent)
                         }
                         TapHandler {
                             acceptedButtons: Qt.LeftButton
-                            onLongPressed: openFileContext(author, model.display, eventId, toolTip, progressInfo, parent)
+                            onLongPressed: openFileContext(model, progressInfo, parent)
                         }
                     }
                 }
@@ -748,14 +748,14 @@ Kirigami.ScrollablePage {
         onEditLastUserMessage: {
             const targetMessage = messageEventModel.getLastLocalUserMessageEventId();
             if (targetMessage) {
-                ChatBoxHelper.edit(targetMessage["body"], targetMessage["body"], targetMessage["event_id"]);
+                ChatBoxHelper.edit(targetMessage.message, targetMessage.formatted_body, targetMessage.event_id, targetMessage.reply_event_id);
                 chatBox.focusInputField();
             }
         }
         onReplyPreviousUserMessage: {
             const replyResponse = messageEventModel.getLatestMessageFromIndex(0);
-            if (replyResponse && replyResponse["event_id"]) {
-                ChatBoxHelper.replyToMessage(replyResponse["event_id"], replyResponse["event"], replyResponse["sender_id"]);
+            if (replyResponse && replyResponse.event_id) {
+                ChatBoxHelper.replyToMessage(replyResponse.event_id, replyResponse.event, replyResponse.sender_id);
             }
         }
     }
@@ -827,7 +827,7 @@ Kirigami.ScrollablePage {
     }
 
     function firstVisibleIndex() {
-        let center = messageListView.x + messageListView.width / 2;
+        const center = messageListView.x + messageListView.width / 2;
         let index = -1
         let i = 0
         while(index === -1 && i < 100) {
@@ -838,7 +838,7 @@ Kirigami.ScrollablePage {
     }
 
     function lastVisibleIndex() {
-        let center = messageListView.x + messageListView.width / 2;
+        const center = messageListView.x + messageListView.width / 2;
         let index = -1
         let i = 0
         while(index === -1 && i < 100) {
@@ -849,12 +849,9 @@ Kirigami.ScrollablePage {
     }
 
     /// Open message context dialog for file and videos
-    function openFileContext(author, message, eventId, source, progressInfo, file) {
+    function openFileContext(event, progressInfo, file) {
         const contextMenu = fileDelegateContextMenu.createObject(page, {
-            author: author,
-            message: message,
-            eventId: eventId,
-            source: source,
+            event: event,
             file: file,
             progressInfo: progressInfo,
         });
@@ -862,14 +859,9 @@ Kirigami.ScrollablePage {
     }
 
     /// Open context menu for normal message
-    function openMessageContext(author, message, eventId, source, eventType, formattedBody) {
+    function openMessageContext(event) {
         const contextMenu = messageDelegateContextMenu.createObject(page, {
-            author: author,
-            message: message,
-            eventId: eventId,
-            formattedBody: formattedBody,
-            source: source,
-            eventType: eventType
+            event: event
         });
         contextMenu.open();
     }

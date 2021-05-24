@@ -78,7 +78,7 @@ void ChatBoxHelper::setReplyEventContent(const QString &replyEventContent)
 
 bool ChatBoxHelper::isReplying() const
 {
-    return !m_replyEventId.isEmpty();
+    return !m_replyEventId.isEmpty() && m_editEventId.isEmpty();
 }
 
 QString ChatBoxHelper::attachmentPath() const
@@ -135,21 +135,24 @@ void ChatBoxHelper::clear()
     setReplyUser(QVariant());
 }
 
-void ChatBoxHelper::edit(const QString &message, const QString &formattedBody, const QString &eventId)
+void ChatBoxHelper::edit(const QString &message, const QString &formattedBody, const QString &eventId, const QString &replyEventId)
 {
     setEditEventId(eventId);
     setEditContent(message);
+    setReplyEventId(replyEventId);
     Q_EMIT editing(message, formattedBody);
 }
 
 void ChatBoxHelper::clearEditReply()
 {
-    setEditEventId(QString());
     setEditContent(QString());
     setReplyEventId(QString());
+    setEditEventId(QString());
     setReplyEventContent(QString());
     setReplyUser(QVariant());
     Q_EMIT shouldClearText();
+    Q_EMIT isEditingChanged(false);
+    Q_EMIT isReplyingChanged(false);
 }
 
 void ChatBoxHelper::clearAttachment()
