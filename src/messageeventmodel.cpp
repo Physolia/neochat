@@ -783,7 +783,6 @@ QVariant MessageEventModel::getLastLocalUserMessageEventId()
                 if (e->hasTextContent() && e->mimeType().name() != "text/plain") {
                     targetMessage.insert("formatted_body", static_cast<const Quotient::EventContent::TextContent *>(e->content())->body);
                 }
-                qDebug() << targetMessage;
                 return targetMessage;
             }
 
