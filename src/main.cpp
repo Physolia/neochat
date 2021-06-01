@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
 
     auto font = QGuiApplication::font();
     auto families = font.families();
-    families.append(QStringLiteral("Noto Sans Emoji"));
+    families.append(QStringLiteral("Noto Color Emoji"));
     font.setFamilies(families);
     QGuiApplication::setFont(font);
 
