@@ -80,6 +80,12 @@ int main(int argc, char *argv[])
     }
 #endif
 
+    auto font = QGuiApplication::font();
+    auto families = font.families();
+    families.append(QStringLiteral("Noto Sans Emoji"));
+    font.setFamilies(families);
+    QGuiApplication::setFont(font);
+
 #ifdef Q_OS_WINDOWS
     if (AttachConsole(ATTACH_PARENT_PROCESS)) {
         freopen("CONOUT$", "w", stdout);
