@@ -209,6 +209,22 @@ Kirigami.ScrollablePage {
                 checked: Config.showLocalMessagesOnRight
                 onToggled: {
                     Config.showLocalMessagesOnRight = checked
+                    if (!checked) {
+                        showLocalMessagesAlwaysOnRightCheckBox.enabled = false;
+                        showLocalMessagesAlwaysOnRightCheckBox.checked = false;
+                        Config.showLocalMessagesAlwaysOnRight = false;
+                    } else {
+                        showLocalMessagesAlwaysOnRightCheckBox.enabled = true;
+                    }
+                    Config.save()
+                }
+            }
+            QQC2.CheckBox {
+                id: showLocalMessagesAlwaysOnRightCheckBox
+                text: i18n("Show your messages always on the right for all window sizes")
+                checked: Config.showLocalMessagesAlwaysOnRight
+                onToggled: {
+                    Config.showLocalMessagesAlwaysOnRight = checked
                     Config.save()
                 }
             }
