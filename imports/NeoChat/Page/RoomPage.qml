@@ -447,6 +447,22 @@ Kirigami.ScrollablePage {
             }
 
             DelegateChoice {
+                roleValue: "location"
+                delegate: TimelineContainer {
+                    id: locationContainer
+                    isLoaded: timelineDelegateChooser.delegateLoaded
+                    width: messageListView.width
+                    onReplyClicked: goToEvent(eventID)
+                    hoverComponent: hoverActions
+
+                    innerObject: LocationDelegate {
+                        Layout.preferredWidth: Kirigami.Units.gridUnit * 15
+                        Layout.maximumHeight: Kirigami.Units.gridUnit * 20
+                    }
+                }
+            }
+
+            DelegateChoice {
                 roleValue: "sticker"
                 delegate: TimelineContainer {
                     isLoaded: timelineDelegateChooser.delegateLoaded
@@ -723,6 +739,11 @@ Kirigami.ScrollablePage {
             id: fullScreenImage
 
             FullScreenImage {}
+        }
+
+        Component {
+            id: fullScreenMap
+            FullScreenMap {}
         }
 
         Component {
