@@ -338,6 +338,16 @@ ToolBar {
         }
 
         ToolButton {
+            id: sendLocation
+            icon.name: "globe"
+            text: i18n("Send location")
+            display: AbstractButton.IconOnly
+            onClicked: locationChooser.open()
+            ToolTip.text: text
+            ToolTip.visible: hovered
+        }
+
+        ToolButton {
             id: sendButton
             icon.name: "document-send"
             text: i18n("Send message")
@@ -350,6 +360,10 @@ ToolBar {
             ToolTip.text: text
             ToolTip.visible: hovered
         }
+    }
+
+    LocationChooser {
+        id: locationChooser
     }
 
     Action {
