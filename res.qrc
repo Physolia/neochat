@@ -41,6 +41,7 @@
         <file>imports/NeoChat/Component/Timeline/FileDelegate.qml</file>
         <file>imports/NeoChat/Component/Timeline/ImageDelegate.qml</file>
         <file>imports/NeoChat/Component/Timeline/EncryptedDelegate.qml</file>
+        <file>imports/NeoChat/Component/Timeline/LocationDelegate.qml</file>
         <file>imports/NeoChat/Component/Login/qmldir</file>
         <file>imports/NeoChat/Component/Login/LoginStep.qml</file>
         <file>imports/NeoChat/Component/Login/Login.qml</file>

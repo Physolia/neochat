@@ -447,6 +447,33 @@ Kirigami.ScrollablePage {
             }
 
             DelegateChoice {
+                roleValue: "location"
+                delegate: TimelineContainer {
+                    id: imageContainer
+                    isLoaded: timelineDelegateChooser.delegateLoaded
+                    width: messageListView.width
+                    onReplyClicked: goToEvent(eventID)
+                    hoverComponent: hoverActions
+
+                    innerObject: LocationDelegate {
+                        Layout.preferredWidth: Kirigami.Units.gridUnit * 15
+                        Layout.maximumHeight: Kirigami.Units.gridUnit * 20
+                        TapHandler {
+                            acceptedButtons: Qt.RightButton
+                            onTapped: openMessageContext(author, model.message, eventId, toolTip, eventType, model.formattedBody ?? model.body, parent.selectedText)
+                        }
+                        TapHandler {
+                            acceptedButtons: Qt.LeftButton
+                            onLongPressed: openMessageContext(author, model.message, eventId, toolTip, eventType, model.formattedBody ?? model.body, parent.selectedText)
+                            onTapped: {
+                                // TODO: Create fullscreen map
+                            }
+                        }
+                    }
+                }
+            }
+
+            DelegateChoice {
                 roleValue: "sticker"
                 delegate: TimelineContainer {
                     isLoaded: timelineDelegateChooser.delegateLoaded
