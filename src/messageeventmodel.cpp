@@ -43,6 +43,7 @@ QHash<int, QByteArray> MessageEventModel::roleNames() const
     roles[ReplyRole] = "reply";
     roles[UserMarkerRole] = "userMarker";
     roles[ShowAuthorRole] = "showAuthor";
+    roles[ShowTailRole] = "showTail";
     roles[ShowSectionRole] = "showSection";
     roles[ReactionRole] = "reaction";
     roles[IsEditedRole] = "isEdited";
@@ -692,6 +693,19 @@ QVariant MessageEventModel::data(const QModelIndex &idx, int role) const
 
     if (role == ShowAuthorRole) {
         for (auto r = row + 1; r < rowCount(); ++r) {
+            auto i = index(r);
+            if (data(i, SpecialMarksRole) != EventStatus::Hidden) {
+                return data(i, AuthorRole) != data(idx, AuthorRole) || data(i, EventTypeRole) != data(idx, EventTypeRole)
+                    || data(idx, TimeRole).toDateTime().msecsTo(data(i, TimeRole).toDateTime()) > 600000
+                    || data(idx, TimeRole).toDateTime().toLocalTime().date().day() != data(i, TimeRole).toDateTime().toLocalTime().date().day();
+            }
+        }
+
+        return true;
+    }
+
+    if (role == ShowTailRole) {
+        for (auto r = row - 1; r >= 0; ++r) {
             auto i = index(r);
             if (data(i, SpecialMarksRole) != EventStatus::Hidden) {
                 return data(i, AuthorRole) != data(idx, AuthorRole) || data(i, EventTypeRole) != data(idx, EventTypeRole)

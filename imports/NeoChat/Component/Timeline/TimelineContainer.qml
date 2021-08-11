@@ -12,6 +12,8 @@ import org.kde.neochat 1.0
 import NeoChat.Component 1.0
 import NeoChat.Dialog 1.0
 
+import org.kde.kquickchatcomponents 1.0 as KQCC
+
 QQC2.ItemDelegate {
     id: messageDelegate
     default property alias innerObject : column.children
@@ -94,10 +96,7 @@ QQC2.ItemDelegate {
 
     QQC2.Control {
         id: bubble
-        topPadding: !Config.compactLayout ? Kirigami.Units.largeSpacing : 0
-        bottomPadding: !Config.compactLayout ? Kirigami.Units.largeSpacing : 0
-        leftPadding: Kirigami.Units.smallSpacing
-        rightPadding: Config.compactLayout ? Kirigami.Units.largeSpacing : Kirigami.Units.smallSpacing
+
         hoverEnabled: true
 
         // state: Config.compactLayout ? "compactLayout" : "default"
@@ -111,6 +110,46 @@ QQC2.ItemDelegate {
         // HACK: anchoring didn't reset anchors.right when switching from parent.right to undefined reliably
         width: Config.compactLayout ? messageDelegate.width - (Config.showAvatarInTimeline ? Kirigami.Units.gridUnit * 2 : 0) + Kirigami.Units.largeSpacing * 2 : implicitWidth
 
+        topPadding: Kirigami.Units.largeSpacing
+        bottomPadding: Kirigami.Units.largeSpacing
+        leftPadding: bubble.fromLeft ? Kirigami.Units.largeSpacing+2+Kirigami.Units.largeSpacing : Kirigami.Units.largeSpacing+2
+        rightPadding: bubble.fromLeft ? Kirigami.Units.largeSpacing+2 : Kirigami.Units.largeSpacing+2+Kirigami.Units.largeSpacing
+
+        Binding on topPadding {
+            when: Config.compactLayout
+            value: 0
+        }
+        Binding on bottomPadding {
+            when: Config.compactLayout
+            value: 0
+        }
+        Binding on leftPadding {
+            when: Config.compactLayout
+            value: Kirigami.Units.smallSpacing
+        }
+        Binding on rightPadding {
+            when: Config.compactLayout
+            value: Kirigami.Units.largeSpacing
+        }
+
+        background: KQCC.ChatBubble {
+            visible: cardBackground && !Config.compactLayout
+
+            Kirigami.Theme.backgroundColor: {
+                if (model.author.isLocalUser)
+                    return Kirigami.ColorUtils.tintWithAlpha(bubble.parent.Kirigami.Theme.backgroundColor, bubble.parent.Kirigami.Theme.focusColor, 0.2)
+
+                if (Kirigami.ColorUtils.brightnessForColor(bubble.parent.Kirigami.Theme.backgroundColor) == Kirigami.ColorUtils.Light)
+                    return Qt.darker(bubble.parent.Kirigami.Theme.backgroundColor, 1.1)
+                else
+                    return Qt.lighter(bubble.parent.Kirigami.Theme.backgroundColor, 1.3)
+            }
+            Kirigami.Theme.inherit: false
+
+            tailVisible: model.showTail
+            tailSize: Kirigami.Units.largeSpacing
+            tailDirection: bubble.state === "userMessageOnLeft" ? KQCC.ChatBubble.TailDirection.FromLeft : KQCC.ChatBubble.TailDirection.FromRight
+        }
 
         // states for anchor animations on window resize
         // as setting anchors to undefined did not work reliably
@@ -202,33 +241,6 @@ QQC2.ItemDelegate {
                         replyClicked(reply.eventId)
                     }
                 }
-            }
-        }
-
-        background: Item {
-            Rectangle {
-                visible: messageDelegate.hovered
-                color: Kirigami.ColorUtils.tintWithAlpha(Kirigami.Theme.backgroundColor, Kirigami.Theme.highlightColor, 0.15)
-                radius: Kirigami.Units.smallSpacing
-                anchors.fill: parent
-            }
-            Kirigami.ShadowedRectangle {
-                visible: cardBackground && !Config.compactLayout
-                anchors.fill: parent
-                color: {
-                    if (model.author.isLocalUser) {
-                        return Kirigami.ColorUtils.tintWithAlpha(Kirigami.Theme.backgroundColor, Kirigami.Theme.highlightColor, 0.15)
-                    } else if (model.isHighlighted) {
-                        return Kirigami.Theme.positiveBackgroundColor
-                    } else {
-                        return Kirigami.Theme.backgroundColor
-                    }
-                }
-                radius: Kirigami.Units.smallSpacing
-                shadow.size: Kirigami.Units.smallSpacing
-                shadow.color: !model.isHighlighted ? Qt.rgba(0.0, 0.0, 0.0, 0.10) : Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.10)
-                border.color: Kirigami.ColorUtils.tintWithAlpha(color, Kirigami.Theme.textColor, 0.15)
-                border.width: 1
             }
         }
     }

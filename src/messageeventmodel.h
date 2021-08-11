@@ -36,6 +36,7 @@ public:
 
         ShowAuthorRole,
         ShowSectionRole,
+        ShowTailRole,
 
         ReactionRole,
 
