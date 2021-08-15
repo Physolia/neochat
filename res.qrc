@@ -68,11 +68,13 @@
         <file>qtquickcontrols2.conf</file>
         <file>imports/NeoChat/Component/glowdot.png</file>
         <file>imports/NeoChat/Component/confetti.png</file>
+        <file>imports/NeoChat/Settings/AboutPage.qml</file>
         <file>imports/NeoChat/Settings/ThemeRadioButton.qml</file>
         <file>imports/NeoChat/Settings/ColorScheme.qml</file>
         <file>imports/NeoChat/Settings/GeneralSettingsPage.qml</file>
         <file>imports/NeoChat/Settings/Emoticons.qml</file>
         <file>imports/NeoChat/Settings/AppearanceSettingsPage.qml</file>
+        <file>imports/NeoChat/Settings/SpellCheckingPage.qml</file>
         <file>imports/NeoChat/Settings/qmldir</file>
     </qresource>
 </RCC>

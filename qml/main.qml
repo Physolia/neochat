@@ -266,7 +266,13 @@ Kirigami.ApplicationWindow {
             Kirigami.Action {
                 text: i18n("Settings")
                 icon.name: "settings-configure"
-                onTriggered: pushReplaceLayer("qrc:/imports/NeoChat/Page/SettingsPage.qml")
+                onTriggered: pageStack.pushDialogLayer("qrc:/imports/NeoChat/Page/SettingsPage.qml", {
+                    width: root.width
+                }, {
+                    title: i18n("Settings"),
+                    width: root.width - (Kirigami.Units.gridUnit * 4),
+                    height: root.height - (Kirigami.Units.gridUnit * 3)
+                })
                 enabled: pageStack.layers.currentItem.title !== i18n("Settings")
                 shortcut: StandardKey.Preferences
             },

@@ -12,6 +12,8 @@ import org.kde.neochat 1.0
 import NeoChat.Settings 1.0
 
 Kirigami.ScrollablePage {
+    title: "Appearance"
+
     ColumnLayout {
         RowLayout {
             Layout.alignment: Qt.AlignCenter
