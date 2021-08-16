@@ -106,6 +106,7 @@ Item {
                 onChosen: addText(emoji)
             }
         }
+
         Behavior on height {
             NumberAnimation {
                 property: "height"
@@ -113,7 +114,6 @@ Item {
                 easing.type: Easing.OutCubic
             }
         }
-
     }
 
     Kirigami.Separator {

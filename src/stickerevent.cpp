@@ -11,6 +11,26 @@ StickerEvent::StickerEvent(const QJsonObject &obj)
 {
 }
 
+StickerEvent::StickerEvent(const QString &body, const Quotient::EventContent::ImageInfo &imageInfo, const QUrl &url)
+    : RoomEvent(typeId(),
+                {{"type", "m.sticker"},
+                 {"content",
+                  QJsonObject{
+                      {"body", body},
+                      {"url", url.toString()},
+                  }}})
+    , m_imageContent({
+          {"body", body},
+          {"url", url.toString()},
+      })
+{
+    QJsonObject infoJson;
+    imageInfo.fillInfoJson(&infoJson);
+    auto content = editJson()["content"].toObject();
+    content.insert("info", infoJson);
+    editJson().insert("content", content);
+}
+
 QString StickerEvent::body() const
 {
     return content<QString>("body"_ls);

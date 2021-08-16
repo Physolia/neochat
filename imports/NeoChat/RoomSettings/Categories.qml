@@ -30,6 +30,16 @@ Kirigami.CategorizedSettings {
                     room: root.room
                 }
             }
+        },
+        Kirigami.SettingAction {
+            text: i18n("Stickers")
+            icon.name: "stickers"
+            page: Qt.resolvedUrl("RoomStickers.qml")
+            initialProperties: {
+                return {
+                    room: root.room
+                }
+            }
         }
     ]
 }

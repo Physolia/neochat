@@ -781,3 +781,9 @@ QCoro::Task<void> NeoChatRoom::doDeleteMessagesByUser(const QString &user)
         }
     }
 }
+
+void NeoChatRoom::postSticker(const QString &body, const EventContent::ImageInfo &imageInfo, const QUrl &url)
+{
+    StickerEvent *event = new StickerEvent(body, imageInfo, url);
+    postEvent(event);
+}

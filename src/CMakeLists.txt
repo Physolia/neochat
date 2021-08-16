@@ -36,6 +36,9 @@ add_executable(neochat
     blurhash.cpp
     blurhashimageprovider.cpp
     joinrulesevent.cpp
+    imagepackevent.cpp
+    stickermodel.cpp
+    imagepacksmodel.cpp
     ../res.qrc
 )
 

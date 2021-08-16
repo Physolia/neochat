@@ -24,48 +24,21 @@ ColumnLayout {
 
     spacing: 0
 
-    ListView {
-        Layout.fillWidth: true
-        Layout.preferredHeight: Kirigami.Units.gridUnit * 2 + 2 // for the focus line
+    RowLayout {
+        Layout.alignment: Qt.AlignHCenter
+        Layout.preferredHeight: Kirigami.Units.gridUnit * 2
 
-        boundsBehavior: Flickable.DragOverBounds
+        ItemDelegate {
+            id: emojis
 
-        clip: true
-
-        orientation: ListView.Horizontal
-
-        model: ListModel {
-            ListElement { label: "custom"; category: "custom" }
-            ListElement { label: "⌛️"; category: "history" }
-            ListElement { label: "😏"; category: "people" }
-            ListElement { label: "🌲"; category: "nature" }
-            ListElement { label: "🍛"; category: "food"}
-            ListElement { label: "🚁"; category: "activity" }
-            ListElement { label: "🚅"; category: "travel" }
-            ListElement { label: "💡"; category: "objects" }
-            ListElement { label: "🔣"; category: "symbols" }
-            ListElement { label: "🏁"; category: "flags" }
-        }
-
-        delegate: ItemDelegate {
-            id: del
-
-            required property string label
-            required property string category
-
-            width: contentItem.Layout.preferredWidth
-            height: Kirigami.Units.gridUnit * 2
-
-            contentItem: Kirigami.Heading {
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-                level: del.label === "custom" ? 4 : 1
-
-                Layout.preferredWidth: del.label === "custom" ? implicitWidth + Kirigami.Units.largeSpacing : Kirigami.Units.gridUnit * 2
-
-                font.family: del.label === "custom" ? Kirigami.Theme.defaultFont.family : 'emoji'
-                text: del.label === "custom" ? i18n("Custom") : del.label
+            property bool selected: true
+            Layout.fillHeight: true
+            contentItem: Kirigami.Icon {
+                source: "preferences-desktop-emoticons"
+                width: parent.width
+                height: parent.height
             }
+            onClicked: emojis.selected = true
 
             Rectangle {
                 anchors.bottom: parent.bottom
@@ -73,12 +46,34 @@ ColumnLayout {
                 width: parent.width
                 height: 2
 
-                visible: emojiCategory === category
+                visible: emojis.selected
+
+                font.family: del.label === "custom" ? Kirigami.Theme.defaultFont.family : 'emoji'
+                text: del.label === "custom" ? i18n("Custom") : del.label
+                color: Kirigami.Theme.focusColor
+            }
+        }
+        ItemDelegate {
+            id: stickers
+            property bool selected: !emojis.selected
+            Layout.fillHeight: true
+            contentItem: Kirigami.Icon {
+                source: "stickers"
+                width: parent.width
+                height: parent.height
+            }
+            onClicked: emojis.selected = false
+
+            Rectangle {
+                anchors.bottom: parent.bottom
+
+                width: parent.width
+                height: 2
+
+                visible: stickers.selected
 
                 color: Kirigami.Theme.focusColor
             }
-
-            onClicked: emojiCategory = category
         }
     }
 
@@ -87,83 +82,162 @@ ColumnLayout {
         Layout.preferredHeight: 1
     }
 
-    GridView {
+    Loader {
+        id: gridLoader
+        sourceComponent: emojis.selected ? emojiComponent : stickerComponent
         Layout.fillWidth: true
         Layout.preferredHeight: Kirigami.Units.gridUnit * 8
         Layout.fillHeight: true
+    }
 
-        cellWidth: Kirigami.Units.gridUnit * 2
-        cellHeight: Kirigami.Units.gridUnit * 2
 
-        boundsBehavior: Flickable.DragOverBounds
+    Component {
+        id: emojiComponent
 
-        clip: true
+        ColumnLayout {
+            spacing: 0
+             ListView {
+                Layout.fillWidth: true
+                Layout.preferredHeight: Kirigami.Units.gridUnit * 2
 
-        model: {
-            switch (emojiCategory) {
-            case "custom":
-                return _picker.customModel
-            case "history":
-                return emojiModel.history
-            case "people":
-                return emojiModel.people
-            case "nature":
-                return emojiModel.nature
-            case "food":
-                return emojiModel.food
-            case "activity":
-                return emojiModel.activity
-            case "travel":
-                return emojiModel.travel
-            case "objects":
-                return emojiModel.objects
-            case "symbols":
-                return emojiModel.symbols
-            case "flags":
-                return emojiModel.flags
-            }
-            return null
-        }
+                boundsBehavior: Flickable.DragOverBounds
 
-        delegate: ItemDelegate {
-            width: Kirigami.Units.gridUnit * 2
-            height: Kirigami.Units.gridUnit * 2
+                clip: true
 
-            contentItem: Kirigami.Heading {
-                level: 1
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-                font.family: 'emoji'
-                text: modelData.isCustom ? "" : modelData.unicode
-            }
+                orientation: ListView.Horizontal
 
-            Image {
-                visible: modelData.isCustom
-                source: visible ? modelData.unicode : ""
-                anchors.fill: parent
-                anchors.margins: 2
+                model: ListModel {
+                    ListElement { label: "custom"; category: "custom" }
+                    ListElement { label: "⌛️"; category: "history" }
+                    ListElement { label: "😏"; category: "people" }
+                    ListElement { label: "🌲"; category: "nature" }
+                    ListElement { label: "🍛"; category: "food"}
+                    ListElement { label: "🚁"; category: "activity" }
+                    ListElement { label: "🚅"; category: "travel" }
+                    ListElement { label: "💡"; category: "objects" }
+                    ListElement { label: "🔣"; category: "symbols" }
+                    ListElement { label: "🏁"; category: "flags" }
+                }
 
-                sourceSize.width: width
-                sourceSize.height: height
+                delegate: ItemDelegate {
+                    id: del
 
-                Rectangle {
-                    anchors.fill: parent
-                    visible: parent.status === Image.Loading
-                    radius: height/2
-                    gradient: ShimmerGradient { }
+                    required property string label
+                    required property string category
+
+                    width: contentItem.Layout.preferredWidth
+                    height: Kirigami.Units.gridUnit * 2
+
+                    contentItem: Kirigami.Heading {
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        level: del.label === "custom" ? 4 : 1
+
+                        Layout.preferredWidth: del.label === "custom" ? implicitWidth + Kirigami.Units.largeSpacing : Kirigami.Units.gridUnit * 2
+
+                        font.family: del.label === "custom" ? Kirigami.Theme.defaultFont.family : 'emoji'
+                        text: del.label === "custom" ? i18n("Custom") : del.label
+                    }
+
+                    Rectangle {
+                        anchors.bottom: parent.bottom
+
+                        width: parent.width
+                        height: 2
+
+                        visible: emojiCategory === category
+
+                        color: Kirigami.Theme.focusColor
+                    }
+
+                    onClicked: emojiCategory = category
                 }
             }
 
-            onClicked: {
-                if (modelData.isCustom) {
-                    chosen(modelData.shortname)
-                } else {
-                    chosen(modelData.unicode)
+            GridView {
+                Layout.fillWidth: true
+                Layout.preferredHeight: Kirigami.Units.gridUnit * 8
+                Layout.fillHeight: true
+
+                cellWidth: Kirigami.Units.gridUnit * 2
+                cellHeight: Kirigami.Units.gridUnit * 2
+
+                boundsBehavior: Flickable.DragOverBounds
+
+                clip: true
+
+                model: {
+                    switch (emojiCategory) {
+                    case "custom":
+                        return _picker.customModel
+                    case "history":
+                        return emojiModel.history
+                    case "people":
+                        return emojiModel.people
+                    case "nature":
+                        return emojiModel.nature
+                    case "food":
+                        return emojiModel.food
+                    case "activity":
+                        return emojiModel.activity
+                    case "travel":
+                        return emojiModel.travel
+                    case "objects":
+                        return emojiModel.objects
+                    case "symbols":
+                        return emojiModel.symbols
+                    case "flags":
+                        return emojiModel.flags
+                    }
+                    return null
                 }
-                emojiModel.emojiUsed(modelData)
+
+                delegate: ItemDelegate {
+                    width: Kirigami.Units.gridUnit * 2
+                    height: Kirigami.Units.gridUnit * 2
+
+                    contentItem: Kirigami.Heading {
+                        level: 1
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        font.family: 'emoji'
+                        text: modelData.isCustom ? "" : modelData.unicode
+                    }
+
+                    Image {
+                        visible: modelData.isCustom
+                        source: visible ? modelData.unicode : ""
+                        anchors.fill: parent
+                        anchors.margins: 2
+
+                        sourceSize.width: width
+                        sourceSize.height: height
+
+                        Rectangle {
+                            anchors.fill: parent
+                            visible: parent.status === Image.Loading
+                            radius: height/2
+                            gradient: ShimmerGradient { }
+                        }
+                    }
+
+                    onClicked: {
+                        if (modelData.isCustom) {
+                            chosen(modelData.shortname)
+                        } else {
+                            chosen(modelData.unicode)
+                        }
+                        emojiModel.emojiUsed(modelData)
+                    }
+                }
+
+                ScrollBar.vertical: ScrollBar {}
             }
         }
+    }
 
-        ScrollBar.vertical: ScrollBar {}
+    Component {
+        id: stickerComponent
+        StickerPicker { }
     }
 }

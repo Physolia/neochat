@@ -52,6 +52,7 @@
 #include "devicesmodel.h"
 #include "emojimodel.h"
 #include "filetypesingleton.h"
+#include "imagepacksmodel.h"
 #include "joinrulesevent.h"
 #include "login.h"
 #include "matriximageprovider.h"
@@ -66,6 +67,7 @@
 #include "roommanager.h"
 #include "sortfilterroomlistmodel.h"
 #include "spellcheckhighlighter.h"
+#include "stickermodel.h"
 #include "userdirectorylistmodel.h"
 #include "userlistmodel.h"
 #include "webshortcutmodel.h"
@@ -192,6 +194,8 @@ int main(int argc, char *argv[])
     qmlRegisterType<UserDirectoryListModel>("org.kde.neochat", 1, 0, "UserDirectoryListModel");
     qmlRegisterType<SortFilterRoomListModel>("org.kde.neochat", 1, 0, "SortFilterRoomListModel");
     qmlRegisterType<DevicesModel>("org.kde.neochat", 1, 0, "DevicesModel");
+    qmlRegisterType<StickerModel>("org.kde.neochat", 1, 0, "StickerModel");
+    qmlRegisterType<ImagePacksModel>("org.kde.neochat", 1, 0, "ImagePacksModel");
     qmlRegisterUncreatableType<RoomMessageEvent>("org.kde.neochat", 1, 0, "RoomMessageEvent", "ENUM");
     qmlRegisterUncreatableType<NeoChatRoomType>("org.kde.neochat", 1, 0, "NeoChatRoomType", "ENUM");
     qmlRegisterUncreatableType<UserType>("org.kde.neochat", 1, 0, "UserType", "ENUM");

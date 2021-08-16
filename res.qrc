@@ -15,7 +15,9 @@
         <file>imports/NeoChat/Page/WelcomePage.qml</file>
         <file>imports/NeoChat/RoomSettings/General.qml</file>
         <file>imports/NeoChat/RoomSettings/Security.qml</file>
+        <file>imports/NeoChat/RoomSettings/RoomStickers.qml</file>
         <file>imports/NeoChat/RoomSettings/Categories.qml</file>
+        <file>imports/NeoChat/RoomSettings/ImagePackEditor.qml</file>
         <file>imports/NeoChat/Component/qmldir</file>
         <file>imports/NeoChat/Component/FullScreenImage.qml</file>
         <file>imports/NeoChat/Component/FancyEffectsContainer.qml</file>
@@ -30,6 +32,7 @@
         <file>imports/NeoChat/Component/ChatBox/CompletionMenu.qml</file>
         <file>imports/NeoChat/Component/ChatBox/qmldir</file>
         <file>imports/NeoChat/Component/Emoji/EmojiPicker.qml</file>
+        <file>imports/NeoChat/Component/Emoji/StickerPicker.qml</file>
         <file>imports/NeoChat/Component/Emoji/qmldir</file>
         <file>imports/NeoChat/Component/Timeline/qmldir</file>
         <file>imports/NeoChat/Component/Timeline/ReplyComponent.qml</file>

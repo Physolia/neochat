@@ -129,6 +129,8 @@ public:
     }
 #endif
 
+    Q_INVOKABLE void postSticker(const QString &body, const EventContent::ImageInfo &imageInfo, const QUrl &url);
+
 private:
     QString m_cachedInput;
     QSet<const Quotient::RoomEvent *> highlights;

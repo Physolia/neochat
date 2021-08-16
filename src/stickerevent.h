@@ -17,6 +17,7 @@ public:
     DEFINE_EVENT_TYPEID("m.sticker", StickerEvent)
 
     explicit StickerEvent(const QJsonObject &obj);
+    explicit StickerEvent(const QString &body, const EventContent::ImageInfo &imageInfo, const QUrl &url);
 
     /// \brief A textual representation or associated description of the
     /// sticker image.
