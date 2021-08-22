@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: 2018-2019 Black Hat <bhat@encom.eu.org>
 // SPDX-FileCopyrightText: 2019 Kitsune Ral <kitsune-ral@users.sf.net>
+// SPDX-FileCopyrightText: 2021 Tobias Fella <fella@posteo.de>
 // SPDX-License-Identifier: GPL-3.0-only
 
 #pragma once
@@ -12,17 +13,17 @@
 #include <QAtomicPointer>
 #include <QReadWriteLock>
 
+#include <jobs/downloadfilejob.h>
+
 namespace Quotient
 {
 class Connection;
 }
-
-class ThumbnailResponse : public QQuickImageResponse
+class MatrixImageResponse : public QQuickImageResponse
 {
     Q_OBJECT
-public:
-    ThumbnailResponse(QString mediaId, QSize requestedSize);
-    ~ThumbnailResponse() override = default;
+public:    MatrixImageResponse(QString mediaId, QSize size);
+    ~MatrixImageResponse() override = default;
 
 private Q_SLOTS:
     void startRequest();
@@ -30,14 +31,19 @@ private Q_SLOTS:
     void doCancel();
 
 private:
-    const QString mediaId;
-    QSize requestedSize;
-    const QString localFile;
-    Quotient::MediaThumbnailJob *job = nullptr;
+    QString mediaId;
+    QByteArray key;
+    QByteArray iv;
+    QByteArray sha256;
 
+    Quotient::BaseJob *job = nullptr;
+
+    QString localFile;
+    QSize requestedSize;
     QImage image;
     QString errorStr;
     mutable QReadWriteLock lock; // Guards ONLY these two members above
+    bool encrypted;
 
     QQuickTextureFactory *textureFactory() const override;
     QString errorString() const override;
@@ -47,5 +53,6 @@ private:
 class MatrixImageProvider : public QQuickAsyncImageProvider
 {
 public:
+    MatrixImageProvider();
     QQuickImageResponse *requestImageResponse(const QString &id, const QSize &requestedSize) override;
 };

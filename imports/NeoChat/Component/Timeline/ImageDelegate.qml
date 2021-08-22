@@ -21,13 +21,11 @@ Image {
     property bool openOnFinished: false
     readonly property bool downloaded: progressInfo && progressInfo.completed
 
-    readonly property bool isThumbnail: !(content.info.thumbnail_info == null || content.thumbnailMediaId == null)
-    //    readonly property var info: isThumbnail ? content.info.thumbnail_info : content.info
     readonly property var info: content.info
-    readonly property string mediaId: isThumbnail ? content.thumbnailMediaId : content.mediaId
     property bool readonly: false
 
-    source: "image://mxc/" + mediaId
+    source: content.file ? "image://mxc/%1/%2/%3/%4".arg(content.file.url).arg(content.file.key.k).arg(content.file.iv).arg(content.file.hashes["sha256"])
+                        : "image://mxc/" + content.mediaId
 
     Image {
         anchors.fill: parent
