@@ -36,6 +36,7 @@ class Controller : public QObject
     Q_PROPERTY(bool supportSystemTray READ supportSystemTray CONSTANT)
     Q_PROPERTY(bool hasWindowSystem READ hasWindowSystem CONSTANT)
     Q_PROPERTY(bool isOnline READ isOnline NOTIFY isOnlineChanged)
+    Q_PROPERTY(QString iconTheme READ iconTheme CONSTANT)
 
 public:
     static Controller &instance();
@@ -84,6 +85,8 @@ public:
     Q_INVOKABLE void joinRoom(const QString &alias);
 
     bool isOnline() const;
+
+    QString iconTheme() const;
 
     Q_INVOKABLE QString formatDuration(quint64 msecs, KFormat::DurationFormatOptions options = KFormat::DefaultDuration) const;
     Q_INVOKABLE QString formatByteSize(double size, int precision = 1) const;

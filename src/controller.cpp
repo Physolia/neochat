@@ -458,6 +458,11 @@ void Controller::changePassword(Connection *connection, const QString &currentPa
     });
 }
 
+QString Controller::iconTheme() const
+{
+    return QIcon::themeName();
+}
+
 bool Controller::setAvatar(Connection *connection, const QUrl &avatarSource)
 {
     User *localUser = connection->user();
