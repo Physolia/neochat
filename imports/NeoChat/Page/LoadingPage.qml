@@ -24,7 +24,7 @@ Kirigami.Page {
         contentItem: Kirigami.InlineMessage {
             visible: !Config.ignoreThemeWarning && Controller.iconTheme !== 'breeze' && Controller.iconTheme !== 'breeze-dark' && Controller.iconTheme !== 'oxygen' && Controller.iconTheme !== 'Breeze'
             type: Kirigami.MessageType.Warning
-            text: i18n("Your icon theme is not supported. NeoChat has been only tested with the Breeze and Oxygen icon theme. Some icon in the UI might be missing.")
+            text: i18n("Your icon theme is not supported. NeoChat has been only tested with the Breeze and Oxygen icon themes. Some icons in the UI might be missing.")
             showCloseButton: true
             onVisibleChanged: if (!visible) {
                 Config.ignoreThemeWarning = true;
