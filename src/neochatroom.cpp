@@ -15,6 +15,7 @@
 #include <qcoro/qcorosignal.h>
 #include <qcoro/task.h>
 
+#include "call/callmanager.h"
 #include "connection.h"
 #include "csapi/account-data.h"
 #include "csapi/content-repo.h"
@@ -35,7 +36,6 @@
 #include "stickerevent.h"
 #include "user.h"
 #include "utils.h"
-#include "callmanager.h"
 
 #include <KLocalizedString>
 

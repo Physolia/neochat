@@ -73,8 +73,8 @@
 #ifdef HAVE_COLORSCHEME
 #include "colorschemer.h"
 #endif
-#include "calldevices.h"
-#include "callmanager.h"
+#include "call/calldevices.h"
+#include "call/callmanager.h"
 
 using namespace Quotient;
 

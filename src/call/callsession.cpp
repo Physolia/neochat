@@ -1,16 +1,15 @@
-/**
- * SPDX-FileCopyrightText: 2021 Tobias Fella <fella@posteo.de>
- * SPDX-FileCopyrightText: 2020-2021 Nheko Authors
- *
- * SPDX-License-Identifier: GPL-3.0-only
- */
+// SPDX-FileCopyrightText: 2021 Nheko Contributors
+// SPDX-FileCopyrightText: 2021 Tobias Fella <fella@posteo.de>
+// SPDX-FileCopyrightText: 2021 Carl Schwan <carl@carlschwan.eu>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "callsession.h"
 
 #include "calldevices.h"
 
-#include <QThread>
 #include <QDebug>
+#include <QThread>
 
 #include <gst/gst.h>
 
@@ -26,8 +25,7 @@ bool _haveVideoStream = false;
 GstPad *_localPiPSinkPad = nullptr;
 GstPad *_remotePiPSinkPad = nullptr;
 
-struct KeyFrameRequestData
-{
+struct KeyFrameRequestData {
     GstElement *pipe = nullptr;
     GstElement *decodebin = nullptr;
     gint packetsLost = 0;
@@ -48,11 +46,10 @@ QPair<int, int> getResolution(GstPad *pad)
 
 QPair<int, int> getPiPDimensions(const QPair<int, int> &resolution, int fullWidth, double scaleFactor)
 {
-    int pipWidth  = fullWidth * scaleFactor;
+    int pipWidth = fullWidth * scaleFactor;
     int pipHeight = static_cast<double>(resolution.second) / resolution.first * pipWidth;
     return qMakePair(pipWidth, pipHeight);
 }
-
 
 QPair<int, int> getResolution(GstElement *pipe, const gchar *elementName, const gchar *padName)
 {
@@ -69,7 +66,7 @@ void setLocalDescription(GstPromise *promise, gpointer webrtc)
     const GstStructure *reply = gst_promise_get_reply(promise);
     gboolean isAnswer = gst_structure_id_has_field(reply, g_quark_from_string("answer"));
     GstWebRTCSessionDescription *gstsdp = nullptr;
-    gst_structure_get(reply, isAnswer ? "answer": "offer", GST_TYPE_WEBRTC_SESSION_DESCRIPTION, &gstsdp, nullptr);
+    gst_structure_get(reply, isAnswer ? "answer" : "offer", GST_TYPE_WEBRTC_SESSION_DESCRIPTION, &gstsdp, nullptr);
     gst_promise_unref(promise);
     g_signal_emit_by_name(webrtc, "set-local-description", gstsdp, nullptr);
     gchar *sdp = gst_sdp_message_as_text(gstsdp->sdp);
@@ -81,9 +78,14 @@ void setLocalDescription(GstPromise *promise, gpointer webrtc)
 
 bool contains(std::string_view str1, std::string_view str2)
 {
-    return std::search(str1.cbegin(), str1.cend(), str2.cbegin(), str2.cend(), [](unsigned char c1, unsigned char c2) {
-        return std::tolower(c1) == std::tolower(c2);
-    }) != str1.cend();
+    return std::search(str1.cbegin(),
+                       str1.cend(),
+                       str2.cbegin(),
+                       str2.cend(),
+                       [](unsigned char c1, unsigned char c2) {
+                           return std::tolower(c1) == std::tolower(c2);
+                       })
+        != str1.cend();
 }
 
 void createOffer(GstElement *webrtc)
@@ -101,8 +103,8 @@ void createAnswer(GstPromise *promise, gpointer webrtc)
 
 void addLocalPiP(GstElement *pipe, const QPair<int, int> &videoCallSize)
 {
-    GstElement *tee = gst_bin_get_by_name(GST_BIN(pipe),"videosrctee");
-    if(!tee) {
+    GstElement *tee = gst_bin_get_by_name(GST_BIN(pipe), "videosrctee");
+    if (!tee) {
         return;
     }
 
@@ -126,7 +128,7 @@ void addLocalPiP(GstElement *pipe, const QPair<int, int> &videoCallSize)
     gint offset = videoCallSize.first / 80;
     g_object_set(_localPiPSinkPad, "xpos", offset, "ypos", offset, nullptr);
     GstPad *srcpad = gst_element_get_static_pad(queue, "src");
-    if(GST_PAD_LINK_FAILED(gst_pad_link(srcpad, _localPiPSinkPad))) {
+    if (GST_PAD_LINK_FAILED(gst_pad_link(srcpad, _localPiPSinkPad))) {
         qDebug() << "Session: Failed to link local PiP elements";
     }
     gst_object_unref(srcpad);
@@ -138,15 +140,15 @@ bool getMediaAttributes(const GstSDPMessage *sdp, const char *mediaType, const c
     payloadType = -1;
     receiveOnly = false;
     sendOnly = false;
-    for(guint mlineIndex = 0; mlineIndex < gst_sdp_message_medias_len(sdp); mlineIndex++) {
+    for (guint mlineIndex = 0; mlineIndex < gst_sdp_message_medias_len(sdp); mlineIndex++) {
         const GstSDPMedia *media = gst_sdp_message_get_media(sdp, mlineIndex);
-        if(!strcmp(gst_sdp_media_get_media(media), mediaType)) {
+        if (!strcmp(gst_sdp_media_get_media(media), mediaType)) {
             receiveOnly = gst_sdp_media_get_attribute_val(media, "recvonly") != nullptr;
             sendOnly = gst_sdp_media_get_attribute_val(media, "sendonly") != nullptr;
             const gchar *rtpval = nullptr;
-            for(guint n = 0; n == 0 || rtpval; n++) {
+            for (guint n = 0; n == 0 || rtpval; n++) {
                 rtpval = gst_sdp_media_get_attribute_val_n(media, "rtpmap", n);
-                if(rtpval && contains(rtpval, encoding)) {
+                if (rtpval && contains(rtpval, encoding)) {
                     payloadType = atoi(rtpval);
                     break;
                 }
@@ -161,10 +163,10 @@ GstWebRTCSessionDescription *parseSDP(const QString &sdp, GstWebRTCSDPType type)
 {
     GstSDPMessage *message;
     gst_sdp_message_new(&message);
-    if(gst_sdp_message_parse_buffer((guint8 *) sdp.toLatin1().data(), sdp.size(), message) == GST_SDP_OK) {
+    if (gst_sdp_message_parse_buffer((guint8 *)sdp.toLatin1().data(), sdp.size(), message) == GST_SDP_OK) {
         return gst_webrtc_session_description_new(type, message);
     } else {
-        //TODO: Error handling - failed to parse remote sdp
+        // TODO: Error handling - failed to parse remote sdp
         gst_sdp_message_free(message);
         return nullptr;
     }
@@ -179,7 +181,7 @@ void iceConnectionStateChanged(GstElement *webrtc, GParamSpec *pspec G_GNUC_UNUS
 {
     GstWebRTCICEConnectionState newState;
     g_object_get(webrtc, "ice-connection-state", &newState, nullptr);
-    switch(newState) {
+    switch (newState) {
     case GST_WEBRTC_ICE_CONNECTION_STATE_CHECKING:
         qDebug() << "Session: GstWebRTCICEConnectionState -> Checking";
         CallSession::instance().setState(CallSession::CONNECTING);
@@ -263,7 +265,7 @@ void _testPacketLoss(GstPromise *promise, gpointer G_GNUC_UNUSED)
 
 void addRemotePiP(GstElement *pipe)
 {
-    if(_remotePiPSinkPad) {
+    if (_remotePiPSinkPad) {
         auto camRes = getResolution(pipe, "camerafilter", "sink");
         auto shareRes = getResolution(pipe, "screenshare", "src");
         auto pipSize = getPiPDimensions(camRes, shareRes.first, 0.2);
@@ -314,16 +316,16 @@ void linkNewPad(GstElement *decodebin, GstPad *newpad, GstElement *pipe)
 
     CallSession *session = &CallSession::instance();
     GstElement *queue = nullptr;
-    if(!strcmp(mediaType, "audio")) {
+    if (!strcmp(mediaType, "audio")) {
         qDebug() << "Session: Receiving incoming audio stream";
         _haveAudioStream = true;
         queue = newAudioSinkChain(pipe);
-    } else if(!strcmp(mediaType, "video")) {
+    } else if (!strcmp(mediaType, "video")) {
         qDebug() << "Session: Receiving incoming video stream";
-        if(!session->getVideoItem()) {
+        if (!session->getVideoItem()) {
             g_free(mediaType);
             qDebug() << "Session: video call item not set";
-            //TODO: Error handling
+            // TODO: Error handling
             return;
         }
         _haveVideoStream = true;
@@ -339,20 +341,20 @@ void linkNewPad(GstElement *decodebin, GstPad *newpad, GstElement *pipe)
     }
 
     GstPad *queuepad = gst_element_get_static_pad(queue, "sink");
-    if(queuepad) {
-        if(GST_PAD_LINK_FAILED(gst_pad_link(newpad, queuepad))) {
+    if (queuepad) {
+        if (GST_PAD_LINK_FAILED(gst_pad_link(newpad, queuepad))) {
             qDebug() << "Session: Unable to link new pad";
-            //TODO: Error handling
+            // TODO: Error handling
         } else {
-            if(session->calltype() != CallSession::VIDEO || (_haveAudioStream && (_haveVideoStream || session->isRemoteVideoReceiveOnly()))) {
+            if (session->calltype() != CallSession::VIDEO || (_haveAudioStream && (_haveVideoStream || session->isRemoteVideoReceiveOnly()))) {
                 session->setState(CallSession::CONNECTED);
-                if(_haveVideoStream) {
+                if (_haveVideoStream) {
                     _keyFrameRequestData.pipe = pipe;
                     _keyFrameRequestData.decodebin = decodebin;
                     _keyFrameRequestData.timerid = g_timeout_add_seconds(3, testPacketLoss, nullptr);
                 }
                 addRemotePiP(pipe);
-                if(session->isRemoteVideoReceiveOnly()) {
+                if (session->isRemoteVideoReceiveOnly()) {
                     addLocalVideo(pipe);
                 }
             }
@@ -371,21 +373,21 @@ void setWaitForKeyFrame(GstBin *decodebin G_GNUC_UNUSED, GstElement *element, gp
 
 void addDecodeBin(GstElement *webrtc G_GNUC_UNUSED, GstPad *newpad, GstElement *pipe)
 {
-    if(GST_PAD_DIRECTION(newpad) != GST_PAD_SRC) {
+    if (GST_PAD_DIRECTION(newpad) != GST_PAD_SRC) {
         return;
     }
 
     qDebug() << "Session: Receiving incoming stream";
     GstElement *decodebin = gst_element_factory_make("decodebin", nullptr);
-    //Investigate hardware, see nheko source
+    // Investigate hardware, see nheko source
     g_object_set(decodebin, "force-sw-decoders", TRUE, nullptr);
     g_signal_connect(decodebin, "pad-added", G_CALLBACK(linkNewPad), pipe);
     g_signal_connect(decodebin, "element-added", G_CALLBACK(setWaitForKeyFrame), nullptr);
     gst_bin_add(GST_BIN(pipe), decodebin);
     gst_element_sync_state_with_parent(decodebin);
     GstPad *sinkpad = gst_element_get_static_pad(decodebin, "sink");
-    if(GST_PAD_LINK_FAILED(gst_pad_link(newpad, sinkpad))) {
-        //TODO: Error handling - unable to link decodebin
+    if (GST_PAD_LINK_FAILED(gst_pad_link(newpad, sinkpad))) {
+        // TODO: Error handling - unable to link decodebin
         qDebug() << "Session: Unable to link decodebin";
     }
     gst_object_unref(sinkpad);
@@ -395,9 +397,9 @@ void iceGatheringStateChanged(GstElement *webrtc, GParamSpec *pspec G_GNUC_UNUSE
 {
     GstWebRTCICEGatheringState newState;
     g_object_get(webrtc, "ice-gathering-state", &newState, nullptr);
-    if(newState == GST_WEBRTC_ICE_GATHERING_STATE_COMPLETE) {
+    if (newState == GST_WEBRTC_ICE_GATHERING_STATE_COMPLETE) {
         qDebug() << "Session: GstWebRTCICEGatheringState -> Complete";
-        if(CallSession::instance().isOffering()) {
+        if (CallSession::instance().isOffering()) {
             Q_EMIT CallSession::instance().offerCreated(_localSdp, _localCandidates);
             CallSession::instance().setState(CallSession::OFFERSENT);
         } else {
@@ -413,7 +415,7 @@ gboolean newBusMessage(GstBus *bus G_GNUC_UNUSED, GstMessage *msg, gpointer user
     switch (GST_MESSAGE_TYPE(msg)) {
     case GST_MESSAGE_EOS:
         qDebug() << "WebRTC: end of stream";
-        //TODO: Error handling
+        // TODO: Error handling
         session->end();
         break;
     case GST_MESSAGE_ERROR:
@@ -421,7 +423,7 @@ gboolean newBusMessage(GstBus *bus G_GNUC_UNUSED, GstMessage *msg, gpointer user
         gchar *debug;
         gst_message_parse_error(msg, &error, &debug);
         qDebug() << "WebRTC: error from element:" << GST_OBJECT_NAME(msg->src) << error->message;
-        //TODO: Error handling
+        // TODO: Error handling
         g_clear_error(&error);
         g_free(debug);
         session->end();
@@ -433,29 +435,65 @@ gboolean newBusMessage(GstBus *bus G_GNUC_UNUSED, GstMessage *msg, gpointer user
 }
 
 CallSession::CallSession()
+    : m_devices(CallDevices::instance())
 {
     qRegisterMetaType<CallSession::State>();
     qRegisterMetaType<CallSession::CallType>();
     qRegisterMetaType<Candidate>();
     qRegisterMetaType<QVector<Candidate>>();
+
+    init();
+}
+
+bool CallSession::init(QString *errorMessage)
+{
+#ifdef GSTREAMER_AVAILABLE
+    if (m_initialised) {
+        return true;
+    }
+
+    GError *error = nullptr;
+    if (!gst_init_check(nullptr, nullptr, &error)) {
+        QString strError("WebRTC: failed to initialise GStreamer: ");
+        if (error) {
+            strError += error->message;
+            g_error_free(error);
+        }
+        qCritical() << strError;
+        if (errorMessage) {
+            *errorMessage = strError;
+        }
+        return false;
+    }
+
+    m_initialised = true;
+    gchar *version = gst_version_string();
+    qDebug() << "WebRTC: initialised" << version;
+    g_free(version);
+    m_devices.init();
+    return true;
+#else
+    (void)errorMessage;
+    return false;
+#endif
 }
 
 void CallSession::acceptAnswer(const QString &sdp)
 {
     qDebug() << "Session: Received answer";
-    if(m_state != CallSession::OFFERSENT) {
+    if (m_state != CallSession::OFFERSENT) {
         return;
     }
 
     GstWebRTCSessionDescription *answer = parseSDP(sdp, GST_WEBRTC_SDP_TYPE_ANSWER);
-    if(!answer) {
+    if (!answer) {
         end();
         return;
     }
 
-    if(m_callType != CallSession::VOICE) {
+    if (m_callType != CallSession::VOICE) {
         int unused;
-        if(!getMediaAttributes(answer->sdp, "video", "vp8", unused, m_isRemoteVideoReceiveOnly, m_isRemoteVideoSendOnly)) {
+        if (!getMediaAttributes(answer->sdp, "video", "vp8", unused, m_isRemoteVideoReceiveOnly, m_isRemoteVideoSendOnly)) {
             m_isRemoteVideoReceiveOnly = true;
         }
     }
@@ -463,10 +501,10 @@ void CallSession::acceptAnswer(const QString &sdp)
     return;
 }
 
-void CallSession::acceptOffer(const QString& sdp)
+void CallSession::acceptOffer(const QString &sdp)
 {
     qDebug() << "Session: Received offer:" << sdp;
-    if(m_state != CallSession::DISCONNECTED) {
+    if (m_state != CallSession::DISCONNECTED) {
         return;
     }
 
@@ -474,34 +512,34 @@ void CallSession::acceptOffer(const QString& sdp)
 
     clear();
     GstWebRTCSessionDescription *offer = parseSDP(sdp, GST_WEBRTC_SDP_TYPE_OFFER);
-    if(!offer) {
-        //TODO: Error handling
+    if (!offer) {
+        // TODO: Error handling
         return;
     }
 
     int opusPayloadType;
     bool receiveOnly;
     bool sendOnly;
-    if(getMediaAttributes(offer->sdp, "audio", "opus", opusPayloadType, receiveOnly, sendOnly)) {
-        if(opusPayloadType == -1) {
-            //TODO: Error handling - no OPUS encoding
+    if (getMediaAttributes(offer->sdp, "audio", "opus", opusPayloadType, receiveOnly, sendOnly)) {
+        if (opusPayloadType == -1) {
+            // TODO: Error handling - no OPUS encoding
             gst_webrtc_session_description_free(offer);
             return;
         }
     } else {
-        //TODO: Error handling - no audio media
+        // TODO: Error handling - no audio media
         gst_webrtc_session_description_free(offer);
         return;
     }
 
     int vp8PayloadType;
     bool isVideo = getMediaAttributes(offer->sdp, "video", "vp8", vp8PayloadType, m_isRemoteVideoReceiveOnly, m_isRemoteVideoSendOnly);
-    if(isVideo && vp8PayloadType == -1) {
-        //TODO: Error handling - no vp8 encoding;
+    if (isVideo && vp8PayloadType == -1) {
+        // TODO: Error handling - no vp8 encoding;
         gst_webrtc_session_description_free(offer);
         return;
     }
-    if(!startPipeline(opusPayloadType, vp8PayloadType)) {
+    if (!startPipeline(opusPayloadType, vp8PayloadType)) {
         gst_webrtc_session_description_free(offer);
         return;
     }
@@ -520,8 +558,8 @@ void CallSession::createOffer(CallType type)
 
     constexpr int opusPayloadType = 111;
     constexpr int vp8PayloadType = 96;
-    if(!startPipeline(opusPayloadType, vp8PayloadType)) {
-        //TODO: Error handling
+    if (!startPipeline(opusPayloadType, vp8PayloadType)) {
+        // TODO: Error handling
     }
 }
 void CallSession::clear()
@@ -535,9 +573,9 @@ void CallSession::clear()
     m_webrtc = nullptr;
     m_state = CallSession::DISCONNECTED;
     m_busWatchId = 0;
-    //TODO m_shareWindowId = 0;
-    //TODO m_haveAudioStream = false;
-    //TODO m_haveVideoStream = false;
+    // TODO m_shareWindowId = 0;
+    // TODO m_haveAudioStream = false;
+    // TODO m_haveVideoStream = false;
     _localPiPSinkPad = nullptr;
     _remotePiPSinkPad = nullptr;
     _localSdp.clear();
@@ -546,33 +584,33 @@ void CallSession::clear()
 
 bool CallSession::startPipeline(int opusPayloadType, int vp8PayloadType)
 {
-    if(m_state != State::DISCONNECTED) {
+    if (m_state != State::DISCONNECTED) {
         return false;
     }
     m_state = CallSession::INITIATING;
     Q_EMIT stateChanged();
 
-    if(!createPipeline(opusPayloadType, vp8PayloadType)) {
+    if (!createPipeline(opusPayloadType, vp8PayloadType)) {
         end();
         return false;
     }
     m_webrtc = gst_bin_get_by_name(GST_BIN(m_pipe), "webrtcbin");
-    if(false /*TODO: CHECK USE STUN*/) {
+    if (false /*TODO: CHECK USE STUN*/) {
         qDebug() << "Session: Setting STUN server:" << STUN_SERVER;
         g_object_set(m_webrtc, "stun-server", STUN_SERVER, nullptr);
     }
 
-    for(const auto &uri : m_turnServers) {
+    for (const auto &uri : m_turnServers) {
         qDebug() << "Session: Setting turn server:" << uri;
-            gboolean udata;
-            g_signal_emit_by_name(m_webrtc, "add-turn-server", uri.toLatin1().data(), (gpointer)(&udata));
+        gboolean udata;
+        g_signal_emit_by_name(m_webrtc, "add-turn-server", uri.toLatin1().data(), (gpointer)(&udata));
     }
 
-    if(m_turnServers.empty()) {
+    if (m_turnServers.empty()) {
         qDebug() << "Session: No TURN servers provided";
     }
 
-    if(m_isOffering) {
+    if (m_isOffering) {
         g_signal_connect(m_webrtc, "on-negotiation-needed", G_CALLBACK(::createOffer), nullptr);
     }
 
@@ -588,8 +626,8 @@ bool CallSession::startPipeline(int opusPayloadType, int vp8PayloadType)
     qDebug() << "Random debug statement #1";
 
     GstStateChangeReturn ret = gst_element_set_state(m_pipe, GST_STATE_PLAYING);
-    if(ret == GST_STATE_CHANGE_FAILURE) {
-        //TODO: Error handling - unable to start pipeline
+    if (ret == GST_STATE_CHANGE_FAILURE) {
+        // TODO: Error handling - unable to start pipeline
         qDebug() << "unable to start pipeline";
         end();
         return false;
@@ -609,26 +647,26 @@ void CallSession::end()
 {
     qDebug() << "Session: ending";
     _keyFrameRequestData = KeyFrameRequestData{};
-    if(m_pipe) {
+    if (m_pipe) {
         gst_element_set_state(m_pipe, GST_STATE_NULL);
         gst_object_unref(m_pipe);
         m_pipe = nullptr;
-        if(m_busWatchId) {
+        if (m_busWatchId) {
             g_source_remove(m_busWatchId);
             m_busWatchId = 0;
         }
     }
     clear();
-    if(m_state != CallSession::DISCONNECTED) {
+    if (m_state != CallSession::DISCONNECTED) {
         m_state = CallSession::DISCONNECTED;
-            Q_EMIT stateChanged();
+        Q_EMIT stateChanged();
     }
 }
 
 bool CallSession::createPipeline(int opusPayloadType, int vp8PayloadType)
 {
-    GstDevice *device = CallDevices::instance().audioDevicesModel()->currentDevice();
-    if(!device) {
+    GstDevice *device = m_devices.audioDevice();
+    if (!device) {
         return false;
     }
 
@@ -642,7 +680,17 @@ bool CallSession::createPipeline(int opusPayloadType, int vp8PayloadType)
     GstElement *queue2 = gst_element_factory_make("queue", nullptr);
     GstElement *capsfilter = gst_element_factory_make("capsfilter", nullptr);
 
-    GstCaps *rtpcaps = gst_caps_new_simple("application/x-rtp", "media", G_TYPE_STRING, "audio", "encoding-name", G_TYPE_STRING, "OPUS", "payload", G_TYPE_INT, opusPayloadType, nullptr);
+    GstCaps *rtpcaps = gst_caps_new_simple("application/x-rtp",
+                                           "media",
+                                           G_TYPE_STRING,
+                                           "audio",
+                                           "encoding-name",
+                                           G_TYPE_STRING,
+                                           "OPUS",
+                                           "payload",
+                                           G_TYPE_INT,
+                                           opusPayloadType,
+                                           nullptr);
     g_object_set(capsfilter, "caps", rtpcaps, nullptr);
     gst_caps_unref(rtpcaps);
 
@@ -652,8 +700,8 @@ bool CallSession::createPipeline(int opusPayloadType, int vp8PayloadType)
     m_pipe = gst_pipeline_new(nullptr);
     gst_bin_add_many(GST_BIN(m_pipe), source, volume, convert, resample, queue1, opusenc, rtp, queue2, capsfilter, webrtcbin, nullptr);
 
-    if(!gst_element_link_many(source, volume, convert, resample, queue1, opusenc, rtp, queue2, capsfilter, webrtcbin, nullptr)) {
-        //TODO: Error handling - failed to link pipeline
+    if (!gst_element_link_many(source, volume, convert, resample, queue1, opusenc, rtp, queue2, capsfilter, webrtcbin, nullptr)) {
+        // TODO: Error handling - failed to link pipeline
         qDebug() << "Session: failed to link pipeline";
         return false;
     }
@@ -664,24 +712,35 @@ bool CallSession::createPipeline(int opusPayloadType, int vp8PayloadType)
 bool CallSession::addVideoPipeline(int vp8PayloadType)
 {
     // allow incoming video calls despite localUser having no webcam
-    if (m_callType != CallSession::VIDEO && !CallDevices::instance().videoDevicesModel()->haveCamera()) {
+    if (m_callType != CallSession::VIDEO && !m_devices.hasCamera()) {
         return !m_isOffering;
     }
 
-    //TODO auto settings = ChatPage::instance()->userSettings();
+    // TODO auto settings = ChatPage::instance()->userSettings();
     GstElement *camerafilter = nullptr;
     GstElement *videoconvert = gst_element_factory_make("videoconvert", nullptr);
     GstElement *tee = gst_element_factory_make("tee", "videosrctee");
     gst_bin_add_many(GST_BIN(m_pipe), videoconvert, tee, nullptr);
-    if (m_callType != CallSession::VIDEO || (false/*settings->screenSharePiP()TODO*/ && CallDevices::instance().videoDevicesModel()->haveCamera())) {
+    if (m_callType != CallSession::VIDEO || (false /*settings->screenSharePiP()TODO*/ && m_devices.hasCamera())) {
         QPair<int, int> resolution;
         QPair<int, int> frameRate;
-        GstDevice *device = CallDevices::instance().videoDevicesModel()->videoDevice(resolution, frameRate);
+        GstDevice *device = m_devices.videoDevice(resolution, frameRate);
         if (!device) {
             return false;
         }
         GstElement *camera = gst_device_create_element(device, nullptr);
-        GstCaps *caps = gst_caps_new_simple("video/x-raw", "width", G_TYPE_INT, resolution.first, "height", G_TYPE_INT, resolution.second, "framerate", GST_TYPE_FRACTION, frameRate.first, frameRate.second, nullptr);
+        GstCaps *caps = gst_caps_new_simple("video/x-raw",
+                                            "width",
+                                            G_TYPE_INT,
+                                            resolution.first,
+                                            "height",
+                                            G_TYPE_INT,
+                                            resolution.second,
+                                            "framerate",
+                                            GST_TYPE_FRACTION,
+                                            frameRate.first,
+                                            frameRate.second,
+                                            nullptr);
         camerafilter = gst_element_factory_make("capsfilter", "camerafilter");
         g_object_set(camerafilter, "caps", caps, nullptr);
         gst_caps_unref(caps);
@@ -689,26 +748,26 @@ bool CallSession::addVideoPipeline(int vp8PayloadType)
         gst_bin_add_many(GST_BIN(m_pipe), camera, camerafilter, nullptr);
         if (!gst_element_link_many(camera, videoconvert, camerafilter, nullptr)) {
             qDebug() << "Session: failed to link camera elements";
-            //TODO: Error handling
+            // TODO: Error handling
             return false;
         }
         if (m_callType == CallType::VIDEO && !gst_element_link(camerafilter, tee)) {
             qDebug() << "Session: failed to link camerafilter -> tee";
-            //TODO: Error handling
+            // TODO: Error handling
             return false;
         }
     }
 
     if (m_callType == CallType::SCREEN) {
-        qDebug() << "Session: screen share frame rate:" << 30; //TODO << settings->screenShareFrameRate();
-        qDebug() << "Session: screen share picture-in-picture:" << false; //TODO << settings->screenSharePiP();
-        qDebug() << "Session: screen share request remote camera:" << false; //TODO << settings->screenShareRemoteVideo();
-        qDebug() << "Session: screen share hide mouse cursor:" << false; //TODO << settings->screenShareHideCursor();
+        qDebug() << "Session: screen share frame rate:" << 30; // TODO << settings->screenShareFrameRate();
+        qDebug() << "Session: screen share picture-in-picture:" << false; // TODO << settings->screenSharePiP();
+        qDebug() << "Session: screen share request remote camera:" << false; // TODO << settings->screenShareRemoteVideo();
+        qDebug() << "Session: screen share hide mouse cursor:" << false; // TODO << settings->screenShareHideCursor();
 
         GstElement *ximagesrc = gst_element_factory_make("ximagesrc", "screenshare");
         if (!ximagesrc) {
             qDebug() << "Session: failed to create ximagesrc";
-            //TODO: Error handling
+            // TODO: Error handling
             return false;
         }
         g_object_set(ximagesrc, "use-damage", FALSE, nullptr);
@@ -721,7 +780,7 @@ bool CallSession::addVideoPipeline(int vp8PayloadType)
         gst_caps_unref(caps);
         gst_bin_add_many(GST_BIN(m_pipe), ximagesrc, capsfilter, nullptr);
 
-        if (false /*TODO settings->screenSharePiP()*/ && CallDevices::instance().videoDevicesModel()->haveCamera()) {
+        if (false /*TODO settings->screenSharePiP()*/ && m_devices.hasCamera()) {
             GstElement *compositor = gst_element_factory_make("compositor", nullptr);
             g_object_set(compositor, "background", 1, nullptr);
             gst_bin_add(GST_BIN(m_pipe), compositor);
@@ -751,7 +810,17 @@ bool CallSession::addVideoPipeline(int vp8PayloadType)
     GstElement *rtpvp8pay = gst_element_factory_make("rtpvp8pay", nullptr);
     GstElement *rtpqueue = gst_element_factory_make("queue", nullptr);
     GstElement *rtpcapsfilter = gst_element_factory_make("capsfilter", nullptr);
-    GstCaps *rtpcaps = gst_caps_new_simple("application/x-rtp", "media", G_TYPE_STRING, "video", "encoding-name", G_TYPE_STRING, "VP8", "payload", G_TYPE_INT, vp8PayloadType, nullptr);
+    GstCaps *rtpcaps = gst_caps_new_simple("application/x-rtp",
+                                           "media",
+                                           G_TYPE_STRING,
+                                           "video",
+                                           "encoding-name",
+                                           G_TYPE_STRING,
+                                           "VP8",
+                                           "payload",
+                                           G_TYPE_INT,
+                                           vp8PayloadType,
+                                           nullptr);
     g_object_set(rtpcapsfilter, "caps", rtpcaps, nullptr);
     gst_caps_unref(rtpcaps);
 
@@ -802,12 +871,12 @@ bool CallSession::isOffering() const
     return m_isOffering;
 }
 
-void CallSession::acceptICECandidates(const QVector<Candidate>& candidates)
+void CallSession::acceptICECandidates(const QVector<Candidate> &candidates)
 {
-    if(m_state >= State::INITIATED) {
-        for(const auto &c : candidates) {
+    if (m_state >= State::INITIATED) {
+        for (const auto &c : candidates) {
             qDebug() << "Remote candidate:" << c.candidate << c.sdpMid << c.sdpMLineIndex;
-            if(!c.candidate.isEmpty()) {
+            if (!c.candidate.isEmpty()) {
                 g_signal_emit_by_name(m_webrtc, "add-ice-candidate", c.sdpMLineIndex, c.candidate.toLatin1().data());
             }
         }
@@ -826,12 +895,12 @@ CallSession::State CallSession::state() const
 
 bool CallSession::havePlugins(bool video) const
 {
-    if(video) {
+    if (video) {
         const gchar *videoPlugins[] = {"compositor", "opengl", "qmlgl", "rtp", "videoconvert", "vpx", nullptr};
-         GstRegistry *registry = gst_registry_get();
-        for(guint i = 0; i < g_strv_length((gchar **) videoPlugins); i++) {
+        GstRegistry *registry = gst_registry_get();
+        for (guint i = 0; i < g_strv_length((gchar **)videoPlugins); i++) {
             GstPlugin *plugin = gst_registry_find_plugin(registry, videoPlugins[i]);
-            if(!plugin) {
+            if (!plugin) {
                 qDebug() << "Missing gstreamer plugin:" << videoPlugins[i];
                 return false;
             }
@@ -841,11 +910,12 @@ bool CallSession::havePlugins(bool video) const
         gst_object_unref(qmlglsink);
     }
 
-    const gchar *voicePlugins[] = {"audioconvert", "audioresample", "autodetect", "dtls", "nice", "opus", "playback", "rtpmanager", "srtp", "volume", "webrtc", nullptr};
+    const gchar *voicePlugins[] =
+        {"audioconvert", "audioresample", "autodetect", "dtls", "nice", "opus", "playback", "rtpmanager", "srtp", "volume", "webrtc", nullptr};
     GstRegistry *registry = gst_registry_get();
-    for(guint i = 0; i < g_strv_length((gchar **) voicePlugins); i++) {
+    for (guint i = 0; i < g_strv_length((gchar **)voicePlugins); i++) {
         GstPlugin *plugin = gst_registry_find_plugin(registry, voicePlugins[i]);
-        if(!plugin) {
+        if (!plugin) {
             qDebug() << "Missing gstreamer plugin:" << voicePlugins[i];
             return false;
         }
@@ -855,6 +925,3 @@ bool CallSession::havePlugins(bool video) const
     qDebug() << "Session: All plugins installed";
     return true;
 }
-
-
-

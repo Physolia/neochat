@@ -1,21 +1,21 @@
-/**
- * SPDX-FileCopyrightText: 2021 Tobias Fella <fella@posteo.de>
- * SPDX-FileCopyrightText: 2020-2021 Nheko Authors
- *
- * SPDX-License-Identifier: GPL-3.0-only
- */
+// SPDX-FileCopyrightText: 2021 Nheko Contributors
+// SPDX-FileCopyrightText: 2021 Tobias Fella <fella@posteo.de>
+// SPDX-FileCopyrightText: 2021 Carl Schwan <carl@carlschwan.eu>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 #pragma once
 
-#include <QObject>
-#include <QString>
-#include <QQuickItem>
 #include <QMetaType>
+#include <QObject>
+#include <QQuickItem>
+#include <QString>
 
 #include <gst/gst.h>
 
-struct Candidate
-{
+class CallDevices;
+
+struct Candidate {
     QString candidate;
     int sdpMLineIndex;
     QString sdpMid;
@@ -79,7 +79,10 @@ Q_SIGNALS:
 
 private:
     CallSession();
+    bool init(QString *errorMessage = nullptr);
 
+    CallDevices &m_devices;
+    bool m_initialised = false;
     CallType m_callType;
     State m_state = DISCONNECTED;
     GstElement *m_webrtc = nullptr;

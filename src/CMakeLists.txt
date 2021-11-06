@@ -36,9 +36,11 @@ add_executable(neochat
     blurhash.cpp
     blurhashimageprovider.cpp
     joinrulesevent.cpp
-    callmanager.cpp
-    calldevices.cpp
-    callsession.cpp
+    call/callmanager.cpp
+    call/calldevices.cpp
+    call/callsession.cpp
+    call/videodevicesmodel.cpp
+    call/audiodevicesmodel.cpp
     ../res.qrc
 )
 
@@ -76,6 +78,14 @@ if(TARGET QCoro5::Coro)
     target_link_libraries(neochat PRIVATE QCoro5::Coro)
 else()
     target_link_libraries(neochat PRIVATE QCoro::QCoro)
+
+if (TARGET PkgConfig::GSTREAMER)
+    target_link_libraries(neochat PRIVATE PkgConfig::GSTREAMER)
+    target_compile_definitions(neochat PRIVATE GSTREAMER_AVAILABLE)
+    if (TARGET PkgConfig::XCB)
+        target_link_libraries(neochat PRIVATE PkgConfig::XCB)
+        target_compile_definitions(neochat PRIVATE XCB_AVAILABLE)
+    endif()
 endif()
 kconfig_add_kcfg_files(neochat GENERATE_MOC neochatconfig.kcfgc)
 

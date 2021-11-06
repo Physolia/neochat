@@ -1,24 +1,21 @@
-/**
- * SPDX-FileCopyrightText: 2021 Tobias Fella <fella@posteo.de>
- * SPDX-FileCopyrightText: 2020-2021 Nheko Authors
- *
- * SPDX-License-Identifier: GPL-3.0-only
- */
+// SPDX-FileCopyrightText: 2020-2021 Nheko Authors
+// SPDX-FileCopyrightText: 2021 Tobias Fella <fella@posteo.de>
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 #pragma once
 
+#include "neochatroom.h"
+#include "neochatuser.h"
 #include <QObject>
 #include <QString>
 #include <events/roomevent.h>
-#include "neochatroom.h"
-#include "neochatuser.h"
 
 #include "callsession.h"
 
-#include "events/callinviteevent.h"
 #include "events/callanswerevent.h"
 #include "events/callcandidatesevent.h"
 #include "events/callhangupevent.h"
+#include "events/callinviteevent.h"
 
 using namespace Quotient;
 class CallManager : public QObject
@@ -31,7 +28,7 @@ class CallManager : public QObject
     Q_PROPERTY(NeoChatUser *remoteUser READ remoteUser NOTIFY remoteUserChanged);
     Q_PROPERTY(QString callId READ callId NOTIFY callIdChanged);
     Q_PROPERTY(NeoChatRoom *room READ room NOTIFY roomChanged);
-    Q_PROPERTY(int lifetime READ lifetime NOTIFY lifetimeChanged); //TODO integrate with 'hasInvite'
+    Q_PROPERTY(int lifetime READ lifetime NOTIFY lifetimeChanged); // TODO integrate with 'hasInvite'
 
 public:
     static CallManager &instance()
@@ -66,8 +63,8 @@ Q_SIGNALS:
     void stateChanged();
     void lifetimeChanged();
     void isInvitingChanged();
-private:
 
+private:
     CallManager();
     QString m_callId;
     QVector<Candidate> m_incomingCandidates;

@@ -23,7 +23,10 @@
         <file>imports/NeoChat/Component/TypingPane.qml</file>
         <file>imports/NeoChat/Component/ShimmerGradient.qml</file>
         <file>imports/NeoChat/Component/QuickSwitcher.qml</file>
-        <file>imports/NeoChat/Component/ChatBox</file>
+        <file>imports/NeoChat/Component/Call/qmldir</file>
+        <file>imports/NeoChat/Component/Call/CallPageButton.qml</file>
+        <file>imports/NeoChat/Component/Call/AnswerSwipe.qml</file>
+        <file>imports/NeoChat/Component/ChatBox/ChatBar.qml</file>
         <file>imports/NeoChat/Component/ChatBox/ChatBox.qml</file>
         <file>imports/NeoChat/Component/ChatBox/ChatBar.qml</file>
         <file>imports/NeoChat/Component/ChatBox/AttachmentPane.qml</file>

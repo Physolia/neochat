@@ -4,15 +4,16 @@
  */
 
 import QtQuick 2.12
-import QtQuick.Controls 2.12
+import QtQuick.Controls 2.12 as QQC2
 import QtQuick.Layouts 1.12
 
 import org.kde.kirigami 2.14 as Kirigami
 
 import org.kde.neochat 1.0
+import NeoChat.Component.Call 1.0
 
 Kirigami.Page {
-
+    id: page
     contextualActions: [
         Kirigami.Action {
             text: i18n("Configure input devices")
@@ -30,52 +31,74 @@ Kirigami.Page {
         anchors.centerIn: parent
         Kirigami.Avatar {
             Layout.alignment: Qt.AlignHCenter
-            Layout.preferredWidth: Kirigami.Units.gridUnit * 20
-            Layout.preferredHeight: Kirigami.Units.gridUnit * 20
-            source: CallManager.remoteUser.avatarMediaId ? ("image://mxc/" + CallManager.remoteUser.avatarMediaId) : undefined
+            implicitHeight: Math.min(page.width / 1.5, page.height / 1.5)
+            implicitWidth: implicitWidth 
+            source: CallManager.remoteUser.avatarMediaId ? ("image://mxc/" + CallManager.remoteUser.avatarMediaId) : ""
         }
-        Label {
+        QQC2.Label {
             text: CallManager.remoteUser.displayName
             horizontalAlignment: Text.AlignHCenter
             Layout.alignment: Text.AlignHCenter
         }
-        Label {
+        QQC2.Label {
             text: CallManager.room.displayName
             horizontalAlignment: Text.AlignHCenter
             Layout.alignment: Text.AlignHCenter
         }
-        ColumnLayout {
-            visible: CallManager.hasInvite
-            Layout.fillWidth: true
+
+        // controls
+        RowLayout {
+            //opacity: callStatus === DialerUtils.Active ? 1 : 0
             Layout.alignment: Qt.AlignHCenter
-            Button {
-                text: i18n("Accept")
-                Layout.alignment: Qt.AlignHCenter
-                onClicked: {
-                    CallManager.acceptCall()
+            Layout.maximumWidth: Kirigami.Units.gridUnit * 16
+            Layout.minimumHeight: Kirigami.Units.gridUnit * 3.5
+            id: buttonRow
+            spacing: Kirigami.Units.smallSpacing
+            CallPageButton {
+                id: dialerButton
+                Layout.fillHeight: true
+                Layout.fillWidth: true
+                iconSource: "dialog-messages"
+                text: i18n("Go back to the chat")
+                toggledOn: false
+                // TODO onClicked: toggledOn = !toggledOn
+            }
+            CallPageButton {
+                id: speakerButton
+                Layout.fillHeight: true
+                Layout.fillWidth: true
+                iconSource: "audio-speakers-symbolic"
+                text: i18n("Speaker")
+                toggledOn: false
+                onClicked: toggledOn = !toggledOn
+                onToggledOnChanged: {
+                    //DialerUtils.setSpeakerMode(toggledOn);
                 }
             }
-            Button {
-                text: i18n("Decline")
-                Layout.alignment: Qt.AlignHCenter
-                onClicked: {
-                    CallManager.hangupCall()
-                }
-            }
-            Button {
-                text: i18n("Ignore")
-                Layout.alignment: Qt.AlignHCenter
-                onClicked: {
-                    CallManager.ignoreCall()
-                    pageStack.push()
+            CallPageButton {
+                id: muteButton
+
+                Layout.fillHeight: true
+                Layout.fillWidth: true
+
+                iconSource: toggledOn ? "microphone-sensitivity-muted-symbolic" : "microphone-sensitivity-high-symbolic"
+                text: i18n("Mute")
+                toggledOn: false
+                onClicked: toggledOn = !toggledOn
+
+                onToggledOnChanged: {
+                    //DialerUtils.setMute(toggledOn)
                 }
             }
         }
-        ColumnLayout {
+
+
+        // controls
+        RowLayout {
             visible: CallManager.isInviting || CallManager.state == CallSession.CONNECTED
             Layout.alignment: Qt.AlignHCenter
             Layout.fillWidth: true
-            Button {
+            CallPageButton {
                 text: i18n("Hang up")
                 Layout.alignment: Qt.AlignHCenter
                 onClicked: {
@@ -83,6 +106,52 @@ Kirigami.Page {
                 }
             }
         }
+
+        Item {
+            Layout.minimumHeight: Kirigami.Units.gridUnit * 5
+            Layout.fillWidth: true
+
+            AnswerSwipe {
+                anchors.fill: parent
+                //STATUS_INCOMING
+                visible: CallManager.hasInvite
+                onAccepted: CallManager.acceptCall()
+                onRejected: CallManager.hangupCall()
+                // TODO CallManager.ignoreCall()
+            }
+
+            // end call button
+            QQC2.AbstractButton {
+                id: endCallButton
+                //STATUS_ACTIVE
+                visible: CallManager.isInviting || CallManager.state == CallSession.CONNECTED
+
+                anchors.centerIn: parent
+                width: Kirigami.Units.gridUnit * 3.5
+                height: Kirigami.Units.gridUnit * 3.5
+
+                onClicked: CallManager.hangupCall()
+
+                background: Rectangle {
+                    anchors.centerIn: parent
+                    height: Kirigami.Units.gridUnit * 3.5
+                    width: height
+                    radius: height / 2
+
+                    color: "red"
+                    opacity: endCallButton.pressed ? 0.5 : 1
+
+                    Kirigami.Icon {
+                        source: "call-stop"
+                        anchors.fill: parent
+                        anchors.margins: Kirigami.Units.largeSpacing
+                        color: "white"
+                        isMask: true
+                    }
+                }
+            }
+        }
+
     }
 
     Timer {
