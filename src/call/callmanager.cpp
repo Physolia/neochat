@@ -6,8 +6,13 @@
 
 #include "controller.h"
 
+#include <gst/gst.h>
+
+#include "voiplogging.h"
+
 CallManager::CallManager()
 {
+    init();
     connect(&CallSession::instance(), &CallSession::stateChanged, this, &CallManager::stateChanged);
     connect(&Controller::instance(), &Controller::activeConnectionChanged, this, [=]() {
         Controller::instance().activeConnection()->getTurnServers();
@@ -63,6 +68,10 @@ void CallManager::handleCallEvent(NeoChatRoom *room, const Quotient::RoomEvent *
 
 void CallManager::handleAnswer(NeoChatRoom *room, const Quotient::CallAnswerEvent *event)
 {
+    // TODO guard against accepting answers if the other account is also logged in to this neochat instance
+    if (event->callId() != m_callId) {
+        return;
+    }
     if (event->senderId() == room->localUser()->id() && event->callId() == m_callId) {
         if (state() == CallSession::DISCONNECTED) {
             // TODO: Show the user that the call was answered on another device
@@ -70,6 +79,7 @@ void CallManager::handleAnswer(NeoChatRoom *room, const Quotient::CallAnswerEven
         }
         return;
     }
+
     if (state() != CallSession::DISCONNECTED && event->callId() == m_callId) {
         CallSession::instance().acceptAnswer(event->sdp());
     }
@@ -80,20 +90,24 @@ void CallManager::handleAnswer(NeoChatRoom *room, const Quotient::CallAnswerEven
 void CallManager::handleCandidates(NeoChatRoom *room, const Quotient::CallCandidatesEvent *event)
 {
     if (event->senderId() == room->localUser()->id()) {
+        qDebug() << "Sent by this user";
         return;
     }
     if (event->callId() != m_callId) {
+        qDebug() << "Not for this call";
         return;
     }
 
     if (state() != CallSession::DISCONNECTED) {
+        qDebug() << "Not disconnected";
         QVector<Candidate> candidates;
         for (const auto &c : event->candidates()) {
             candidates += Candidate{c.toObject()["candidate"].toString(), c.toObject()["sdpMLineIndex"].toInt(), c.toObject()["sdpMid"].toString()};
         }
         CallSession::instance().acceptICECandidates(candidates);
     } else {
-        m_incomingCandidates.clear();
+        qDebug() << "Disconnected, saving for later";
+        // m_incomingCandidates.clear();
         for (const auto &c : event->candidates()) {
             m_incomingCandidates += Candidate{c.toObject()["candidate"].toString(), c.toObject()["sdpMLineIndex"].toInt(), c.toObject()["sdpMid"].toString()};
         }
@@ -102,6 +116,9 @@ void CallManager::handleCandidates(NeoChatRoom *room, const Quotient::CallCandid
 
 void CallManager::handleInvite(NeoChatRoom *room, const Quotient::CallInviteEvent *event)
 {
+    if (m_callId == event->callId()) {
+        return;
+    }
     if (state() != CallSession::DISCONNECTED) {
         return;
     }
@@ -122,6 +139,7 @@ void CallManager::handleInvite(NeoChatRoom *room, const Quotient::CallInviteEven
         m_hasInvite = false;
         Q_EMIT hasInviteChanged();
     });
+    // acceptCall(); //TODO remove
 }
 
 void CallManager::handleHangup(NeoChatRoom *room, const Quotient::CallHangupEvent *event)
@@ -213,13 +231,13 @@ void CallManager::ignoreCall()
     Q_EMIT remoteUserChanged();
 }
 
-void CallManager::startCall(NeoChatRoom *room)
+void CallManager::startCall(NeoChatRoom *room, bool camera)
 {
     if (state() != CallSession::DISCONNECTED) {
         return;
     }
     if (room->users().size() != 2) {
-        qDebug() << "Room size != 2; aborting mission.";
+        qCWarning(voip) << "This room doesn't have exactly two members; aborting mission.";
         return;
     }
     checkPlugins(false); // TODO: video
@@ -234,8 +252,9 @@ void CallManager::startCall(NeoChatRoom *room)
 
     CallSession::instance().setTurnServers(m_turnUris);
     generateCallId();
+    CallSession::instance().setSendVideo(camera);
 
-    CallSession::instance().createOffer(CallSession::VOICE);
+    CallSession::instance().startCall();
     m_isInviting = true;
     Q_EMIT isInvitingChanged();
 
@@ -263,4 +282,44 @@ void CallManager::generateCallId()
 bool CallManager::isInviting() const
 {
     return m_isInviting;
+}
+
+void CallManager::setMuted(bool muted)
+{
+    CallSession::instance().setMuted(muted);
+    Q_EMIT mutedChanged();
+}
+
+bool CallManager::muted() const
+{
+    return CallSession::instance().muted();
+}
+
+bool CallManager::init()
+{
+    if (m_initialised) {
+        return true;
+    }
+
+    GError *error = nullptr;
+    if (!gst_init_check(nullptr, nullptr, &error)) {
+        QString strError("Failed to initialise GStreamer: ");
+        if (error) {
+            strError += error->message;
+            g_error_free(error);
+        }
+        qCCritical(voip) << strError;
+        return false;
+    }
+
+    m_initialised = true;
+    gchar *version = gst_version_string();
+    qCDebug(voip) << "Initialised" << version;
+    g_free(version);
+
+    // Required to register the qml types
+    auto _sink = gst_element_factory_make("qmlglsink", nullptr);
+    Q_ASSERT(_sink);
+    gst_object_unref(_sink);
+    return true;
 }

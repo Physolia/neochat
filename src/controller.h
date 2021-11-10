@@ -39,6 +39,7 @@ class Controller : public QObject
     Q_PROPERTY(bool supportSystemTray READ supportSystemTray CONSTANT)
     Q_PROPERTY(bool hasWindowSystem READ hasWindowSystem CONSTANT)
     Q_PROPERTY(bool isOnline READ isOnline NOTIFY isOnlineChanged)
+    Q_PROPERTY(QQuickItem *item MEMBER m_item);
 
 public:
     static Controller &instance();
@@ -93,6 +94,7 @@ public:
 
     Q_INVOKABLE void setBlur(QQuickItem *item, bool blur);
     Q_INVOKABLE void raiseWindow(QWindow *window);
+    QQuickItem *m_item = nullptr;
 
 private:
     explicit Controller(QObject *parent = nullptr);

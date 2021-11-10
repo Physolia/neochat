@@ -1,3 +1,4 @@
 module NeoChat.Component.Call
 CallPageButton 1.0 CallPageButton.qml
 AnswerSwipe 1.0 AnswerSwipe.qml
+CallConfigurationSheet 1.0 CallConfigurationSheet.qml

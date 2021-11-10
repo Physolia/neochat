@@ -8,6 +8,7 @@ import QtQuick.Controls 2.12 as QQC2
 import QtQuick.Layouts 1.12
 
 import org.kde.kirigami 2.14 as Kirigami
+import org.freedesktop.gstreamer.GLVideoItem 1.0
 
 import org.kde.neochat 1.0
 import NeoChat.Component.Call 1.0
@@ -29,12 +30,19 @@ Kirigami.Page {
 
     ColumnLayout {
         anchors.centerIn: parent
-        Kirigami.Avatar {
-            Layout.alignment: Qt.AlignHCenter
-            implicitHeight: Math.min(page.width / 1.5, page.height / 1.5)
-            implicitWidth: implicitWidth 
-            source: CallManager.remoteUser.avatarMediaId ? ("image://mxc/" + CallManager.remoteUser.avatarMediaId) : ""
+        anchors.fill: parent
+
+        GstGLVideoItem {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            Component.onCompleted: Controller.item = this
+            z: 10
+            MouseArea {
+                anchors.fill: parent
+                drag.target: parent
+            }
         }
+
         QQC2.Label {
             text: CallManager.remoteUser.displayName
             horizontalAlignment: Text.AlignHCenter
@@ -50,7 +58,7 @@ Kirigami.Page {
         RowLayout {
             //opacity: callStatus === DialerUtils.Active ? 1 : 0
             Layout.alignment: Qt.AlignHCenter
-            Layout.maximumWidth: Kirigami.Units.gridUnit * 16
+            Layout.maximumWidth: Kirigami.Units.gridUnit * 32
             Layout.minimumHeight: Kirigami.Units.gridUnit * 3.5
             id: buttonRow
             spacing: Kirigami.Units.smallSpacing
@@ -83,8 +91,8 @@ Kirigami.Page {
 
                 iconSource: toggledOn ? "microphone-sensitivity-muted-symbolic" : "microphone-sensitivity-high-symbolic"
                 text: i18n("Mute")
-                toggledOn: false
-                onClicked: toggledOn = !toggledOn
+                toggledOn: CallManager.muted
+                onClicked: CallManager.muted = !CallManager.muted
 
                 onToggledOnChanged: {
                     //DialerUtils.setMute(toggledOn)
@@ -92,20 +100,18 @@ Kirigami.Page {
             }
         }
 
-
-        // controls
-        RowLayout {
-            visible: CallManager.isInviting || CallManager.state == CallSession.CONNECTED
-            Layout.alignment: Qt.AlignHCenter
-            Layout.fillWidth: true
-            CallPageButton {
-                text: i18n("Hang up")
-                Layout.alignment: Qt.AlignHCenter
-                onClicked: {
-                    CallManager.hangupCall()
-                }
-            }
-        }
+        //RowLayout {
+            //visible: CallManager.isInviting || CallManager.state == CallSession.CONNECTED
+            //Layout.alignment: Qt.AlignHCenter
+            //Layout.fillWidth: true
+            //CallPageButton {
+                //text: i18n("Hang up")
+                //Layout.alignment: Qt.AlignHCenter
+                //onClicked: {
+                    //CallManager.hangupCall()
+                //}
+            //}
+        //}
 
         Item {
             Layout.minimumHeight: Kirigami.Units.gridUnit * 5

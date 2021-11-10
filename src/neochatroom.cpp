@@ -77,6 +77,9 @@ NeoChatRoom::NeoChatRoom(Connection *connection, QString roomId, JoinState joinS
     connect(this, &Room::callEvent, this, [=](Room* room, const RoomEvent* event){
         CallManager::instance().handleCallEvent(static_cast<NeoChatRoom *>(room), event);
     });
+    connect(this, &Room::callEvent, this, [=](Room *room, const RoomEvent *event) {
+        CallManager::instance().handleCallEvent(static_cast<NeoChatRoom *>(room), event); // TODO figure out why this happens twice for each invite
+    });
 }
 
 void NeoChatRoom::uploadFile(const QUrl &url, const QString &body)

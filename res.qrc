@@ -26,6 +26,7 @@
         <file>imports/NeoChat/Component/Call/qmldir</file>
         <file>imports/NeoChat/Component/Call/CallPageButton.qml</file>
         <file>imports/NeoChat/Component/Call/AnswerSwipe.qml</file>
+        <file>imports/NeoChat/Component/Call/CallConfigurationSheet.qml</file>
         <file>imports/NeoChat/Component/ChatBox/ChatBar.qml</file>
         <file>imports/NeoChat/Component/ChatBox/ChatBox.qml</file>
         <file>imports/NeoChat/Component/ChatBox/ChatBar.qml</file>

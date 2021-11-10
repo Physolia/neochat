@@ -73,8 +73,11 @@
 #ifdef HAVE_COLORSCHEME
 #include "colorschemer.h"
 #endif
-#include "call/calldevices.h"
+
+#include "call/audiosources.h"
 #include "call/callmanager.h"
+#include "call/devicemonitor.h"
+#include "call/videosources.h"
 
 using namespace Quotient;
 
@@ -170,7 +173,6 @@ int main(int argc, char *argv[])
         colorScheme.apply(config->colorScheme());
     }
 #endif
-    CallDevices::instance();
 
     qmlRegisterSingletonInstance("org.kde.neochat", 1, 0, "Controller", &Controller::instance());
     qmlRegisterSingletonInstance("org.kde.neochat", 1, 0, "Clipboard", &clipboard);
@@ -182,8 +184,9 @@ int main(int argc, char *argv[])
     qmlRegisterSingletonInstance("org.kde.neochat", 1, 0, "EmojiModel", new EmojiModel(&app));
     qmlRegisterSingletonInstance("org.kde.neochat", 1, 0, "CommandModel", new CommandModel(&app));
     qmlRegisterSingletonInstance("org.kde.neochat", 1, 0, "AccountRegistry", &Quotient::AccountRegistry::instance());
-    qmlRegisterSingletonInstance("org.kde.neochat", 1, 0, "CallDevices", &CallDevices::instance());
     qmlRegisterSingletonInstance("org.kde.neochat", 1, 0, "CallManager", &CallManager::instance());
+    qmlRegisterSingletonInstance("org.kde.neochat", 1, 0, "AudioSources", &AudioSources::instance());
+    qmlRegisterSingletonInstance("org.kde.neochat", 1, 0, "VideoSources", &VideoSources::instance());
     qmlRegisterType<ActionsHandler>("org.kde.neochat", 1, 0, "ActionsHandler");
     qmlRegisterType<ChatDocumentHandler>("org.kde.neochat", 1, 0, "ChatDocumentHandler");
     qmlRegisterType<SpellcheckHighlighter>("org.kde.neochat", 1, 0, "SpellcheckHighlighter");

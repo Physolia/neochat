@@ -95,11 +95,8 @@
     <entry name="Camera" type="string">
       <label>Name of the camera</label>
     </entry>
-    <entry name="CameraResolution" type="string">
-      <label>Resolution of the camera</label>
-    </entry>
-    <entry name="CameraFrameRate" type="string">
-      <label>Frame rate of the camera</label>
+    <entry name="CameraCaps" type="int">
+      <label>Index of the camera caps</label>
     </entry>
     <entry name="ScreenShareFrameRate" type="int">
       <label>Frame rate of the screenshare</label>

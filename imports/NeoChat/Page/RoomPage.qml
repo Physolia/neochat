@@ -17,6 +17,7 @@ import NeoChat.Component.ChatBox 1.0
 import NeoChat.Component.Timeline 1.0
 import NeoChat.Dialog 1.0
 import NeoChat.Menu.Timeline 1.0
+import NeoChat.Component.Call 1.0
 
 Kirigami.ScrollablePage {
     id: page
@@ -78,7 +79,8 @@ Kirigami.ScrollablePage {
         text: i18n("Call")
         icon.name: "call-start"
         onTriggered: {
-            CallManager.startCall(page.currentRoom)
+            callConfigurationSheet.room = page.currentRoom
+            callConfigurationSheet.open()
         }
     }
 
@@ -621,5 +623,8 @@ Kirigami.ScrollablePage {
             eventType: event.eventType
         });
         contextMenu.open();
+    }
+    CallConfigurationSheet {
+        id: callConfigurationSheet
     }
 }

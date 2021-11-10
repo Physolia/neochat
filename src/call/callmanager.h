@@ -29,6 +29,7 @@ class CallManager : public QObject
     Q_PROPERTY(QString callId READ callId NOTIFY callIdChanged);
     Q_PROPERTY(NeoChatRoom *room READ room NOTIFY roomChanged);
     Q_PROPERTY(int lifetime READ lifetime NOTIFY lifetimeChanged); // TODO integrate with 'hasInvite'
+    Q_PROPERTY(bool muted READ muted WRITE setMuted NOTIFY mutedChanged);
 
 public:
     static CallManager &instance()
@@ -45,9 +46,12 @@ public:
     bool isInviting() const;
     int lifetime() const;
 
+    bool muted() const;
+    void setMuted(bool muted);
+
     void handleCallEvent(NeoChatRoom *room, const RoomEvent *event);
 
-    Q_INVOKABLE void startCall(NeoChatRoom *room);
+    Q_INVOKABLE void startCall(NeoChatRoom *room, bool camera);
     Q_INVOKABLE void acceptCall();
     Q_INVOKABLE void hangupCall();
     Q_INVOKABLE void ignoreCall();
@@ -63,6 +67,7 @@ Q_SIGNALS:
     void stateChanged();
     void lifetimeChanged();
     void isInvitingChanged();
+    void mutedChanged();
 
 private:
     CallManager();
@@ -89,4 +94,7 @@ private:
     void handleAnswer(NeoChatRoom *room, const CallAnswerEvent *event);
 
     void generateCallId();
+    bool init();
+
+    bool m_initialised = false;
 };

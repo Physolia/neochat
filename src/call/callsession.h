@@ -13,6 +13,9 @@
 
 #include <gst/gst.h>
 
+#define OPUS_PAYLOAD_TYPE 111
+#define VP8_PAYLOAD_TYPE 96
+
 class CallDevices;
 
 struct Candidate {
@@ -28,12 +31,6 @@ class CallSession : public QObject
     Q_OBJECT
 
 public:
-    enum CallType {
-        VOICE,
-        VIDEO,
-        SCREEN,
-    };
-
     enum State {
         DISCONNECTED,
         ICEFAILED,
@@ -44,7 +41,6 @@ public:
         CONNECTING,
         CONNECTED,
     };
-    Q_ENUM(CallType);
     Q_ENUM(State);
 
     static CallSession &instance()
@@ -53,7 +49,7 @@ public:
         return _instance;
     }
 
-    void createOffer(CallType type);
+    void startCall();
     void acceptOffer(const QString &sdp);
     void acceptAnswer(const QString &sdp);
     void acceptICECandidates(const QVector<Candidate> &candidates);
@@ -61,7 +57,6 @@ public:
 
     void setTurnServers(QStringList servers);
     QQuickItem *getVideoItem() const;
-    CallType calltype() const;
 
     bool isRemoteVideoReceiveOnly() const;
     bool isOffering() const;
@@ -69,8 +64,20 @@ public:
 
     State state() const;
 
-    // DON'T!
     void setState(State state);
+    GstElement *m_webrtc = nullptr;
+
+    QVector<Candidate> m_localCandidates;
+    bool m_haveAudioStream = false;
+    bool m_haveVideoStream = false;
+    QString m_localSdp;
+
+    void setMuted(bool muted);
+    bool muted() const;
+    GstElement *m_pipe;
+
+    void setSendVideo(bool video);
+    bool sendVideo() const;
 
 Q_SIGNALS:
     void stateChanged();
@@ -79,23 +86,18 @@ Q_SIGNALS:
 
 private:
     CallSession();
-    bool init(QString *errorMessage = nullptr);
 
-    CallDevices &m_devices;
-    bool m_initialised = false;
-    CallType m_callType;
     State m_state = DISCONNECTED;
-    GstElement *m_webrtc = nullptr;
     bool m_isRemoteVideoReceiveOnly;
     bool m_isRemoteVideoSendOnly;
     bool m_isOffering;
-    GstElement *m_pipe;
     QStringList m_turnServers;
     QQuickItem *m_videoItem;
     unsigned int m_busWatchId = 0;
+    bool m_sendVideo = false;
 
-    bool startPipeline(int opusPayloadType, int vp8PayloadType);
-    bool createPipeline(int, int);
+    bool startPipeline();
+    bool createPipeline();
     void clear();
-    bool addVideoPipeline(int vp8PayloadType);
+    bool addVideoPipeline();
 };

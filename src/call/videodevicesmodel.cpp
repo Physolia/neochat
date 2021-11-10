@@ -17,22 +17,22 @@ extern "C" {
 namespace
 {
 
-using FrameRate = std::pair<int, int>;
+using Framerate = std::pair<int, int>;
 
-std::optional<FrameRate> getFrameRate(const GValue *value)
+std::optional<Framerate> getFramerate(const GValue *value)
 {
     if (GST_VALUE_HOLDS_FRACTION(value)) {
         gint num = gst_value_get_fraction_numerator(value);
         gint den = gst_value_get_fraction_denominator(value);
-        return FrameRate{num, den};
+        return Framerate{num, den};
     }
     return std::nullopt;
 }
 
-void addFrameRate(QStringList &rates, const FrameRate &rate)
+void addFramerate(QStringList &rates, const Framerate &rate)
 {
-    constexpr double minimumFrameRate = 15.0;
-    if (static_cast<double>(rate.first) / rate.second >= minimumFrameRate)
+    constexpr double minimumFramerate = 1.0;
+    if (static_cast<double>(rate.first) / rate.second >= minimumFramerate)
         rates.push_back(rate.first + "/" + rate.second);
 }
 
@@ -66,7 +66,7 @@ QVariant VideoDevicesModel::data(const QModelIndex &index, int role) const
     return {};
 }
 
-int VideoDevicesModel::rowCount(const QModelIndex &parent) const
+int VideoDevicesModel::rowCount(const QModelIndex &) const
 {
     return m_videoSources.size();
 }
@@ -94,33 +94,31 @@ void VideoDevicesModel::addDevice(GstDevice *device)
     }
 
     VideoSource videoSource{name, device, {}};
-    unsigned int nCaps = gst_caps_get_size(gstcaps);
-    for (int i = 0; i < nCaps; i++) {
+    for (size_t i = 0; i < gst_caps_get_size(gstcaps); i++) {
         GstStructure *structure = gst_caps_get_structure(gstcaps, i);
         const gchar *_capName = gst_structure_get_name(structure);
         if (!strcmp(_capName, "video/x-raw")) {
             gint width, height;
             if (gst_structure_get(structure, "width", G_TYPE_INT, &width, "height", G_TYPE_INT, &height, nullptr)) {
                 VideoSource::Caps caps;
-                QPair<int, int> dimension = qMakePair(width, height);
-                caps.resolution = QString::number(dimension.first) + QStringLiteral("x") + QString::number(dimension.second);
+                caps.resolution = QString::number(width) + QStringLiteral("x") + QString::number(height);
                 QStringList framerates;
                 const GValue *_framerate = gst_structure_get_value(structure, "framerate");
                 if (GST_VALUE_HOLDS_FRACTION(_framerate)) {
-                    addFrameRate(framerates, *getFrameRate(_framerate));
+                    addFramerate(framerates, *getFramerate(_framerate));
                 } else if (GST_VALUE_HOLDS_FRACTION_RANGE(_framerate)) {
-                    addFrameRate(framerates, *getFrameRate(gst_value_get_fraction_range_min(_framerate)));
-                    addFrameRate(framerates, *getFrameRate(gst_value_get_fraction_range_max(_framerate)));
+                    addFramerate(framerates, *getFramerate(gst_value_get_fraction_range_min(_framerate)));
+                    addFramerate(framerates, *getFramerate(gst_value_get_fraction_range_max(_framerate)));
                 } else if (GST_VALUE_HOLDS_LIST(_framerate)) {
                     guint nRates = gst_value_list_get_size(_framerate);
                     for (guint j = 0; j < nRates; j++) {
                         const GValue *rate = gst_value_list_get_value(_framerate, j);
                         if (GST_VALUE_HOLDS_FRACTION(rate)) {
-                            addFrameRate(framerates, *getFrameRate(rate));
+                            addFramerate(framerates, *getFramerate(rate));
                         }
                     }
                 }
-                caps.frameRates = framerates;
+                caps.framerates = framerates;
                 videoSource.caps += caps;
             }
         }
@@ -145,15 +143,15 @@ bool VideoDevicesModel::removeDevice(GstDevice *device, bool changed)
     return false;
 }
 
-GstDevice *VideoDevicesModel::currentDevice(QPair<int, int> &resolution, QPair<int, int> &frameRate) const
+GstDevice *VideoDevicesModel::currentDevice(QPair<int, int> &resolution, QPair<int, int> &framerate) const
 {
     const auto config = NeoChatConfig::self();
     if (auto s = getVideoSource(config->camera()); s) {
         qDebug() << "WebRTC: camera:" << config->camera();
         resolution = tokenise(config->cameraResolution(), 'x');
-        frameRate = tokenise(config->cameraFrameRate(), '/');
+        framerate = tokenise(config->cameraFramerate(), '/');
         qDebug() << "WebRTC: camera resolution:" << resolution.first << 'x' << resolution.second;
-        qDebug() << "WebRTC: camera frame rate:" << frameRate.first << '/' << frameRate.second;
+        qDebug() << "WebRTC: camera frame rate:" << framerate.first << '/' << framerate.second;
         return s->device;
     } else {
         qCritical() << "WebRTC: unknown camera:" << config->camera();
@@ -167,7 +165,7 @@ void VideoDevicesModel::setDefaultDevice() const
         const VideoSource &camera = m_videoSources.front();
         NeoChatConfig::setCamera(camera.name);
         NeoChatConfig::setCameraResolution(camera.caps.front().resolution);
-        NeoChatConfig::setCameraFrameRate(camera.caps.front().frameRates.front());
+        NeoChatConfig::setCameraFramerate(camera.caps.front().frameraetes.front());
     }
 }
 

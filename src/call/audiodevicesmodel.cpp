@@ -6,6 +6,7 @@
 
 #include "audiodevicesmodel.h"
 #include "neochatconfig.h"
+#include <QDebug>
 
 #ifdef GSTREAMER_AVAILABLE
 extern "C" {
@@ -16,6 +17,7 @@ extern "C" {
 AudioDevicesModel::AudioDevicesModel(QObject *parent)
     : QAbstractListModel(parent)
 {
+    qDebug() << "foo";
 }
 
 QVariant AudioDevicesModel::data(const QModelIndex &index, int role) const
@@ -70,14 +72,14 @@ void AudioDevicesModel::addDevice(GstDevice *device)
     QString name(_name);
     g_free(_name);
 
-    qDebug() << "CallDevices: Audio device added:" << name;
+    qWarning() << "CallDevices: Audio device added:" << name;
 
     beginInsertRows({}, m_audioSources.size(), m_audioSources.size());
     m_audioSources.append(AudioSource{name, device});
     endInsertRows();
 }
 
-void AudioDevicesModel::setDefaultDevice() const
+void AudioDevicesModel::setCurrentDevice(const QString &device) const
 {
     if (NeoChatConfig::microphone().isEmpty()) {
         NeoChatConfig::setMicrophone(m_audioSources.front().name);

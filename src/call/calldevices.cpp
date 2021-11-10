@@ -12,6 +12,8 @@
 #include <cstring>
 #include <optional>
 
+#include "voiplogging.h"
+
 #ifdef GSTREAMER_AVAILABLE
 extern "C" {
 #include "gst/gst.h"
@@ -25,6 +27,7 @@ CallDevices::CallDevices()
     , m_audioDevicesModel(new AudioDevicesModel(this))
     , m_videoDevicesModel(new VideoDevicesModel(this))
 {
+    init();
 }
 
 AudioDevicesModel *CallDevices::audioDevicesModel() const
@@ -45,14 +48,13 @@ void CallDevices::addDevice(GstDevice *device)
     gchar *type = gst_device_get_device_class(device);
     bool isVideo = !std::strncmp(type, "Video", 5);
     g_free(type);
-    if (!isVideo) {
+    if (isVideo) {
+        m_videoDevicesModel->addDevice(device);
+        m_videoDevicesModel->setDefaultDevice();
+    } else {
         m_audioDevicesModel->addDevice(device);
         m_audioDevicesModel->setDefaultDevice();
-        return;
     }
-
-    m_videoDevicesModel->addDevice(device);
-    m_videoDevicesModel->setDefaultDevice();
 }
 
 void CallDevices::removeDevice(GstDevice *device, bool changed)
@@ -106,6 +108,7 @@ void CallDevices::init()
     static GstDeviceMonitor *monitor = nullptr;
     if (!monitor) {
         monitor = gst_device_monitor_new();
+        Q_ASSERT(monitor);
         GstCaps *caps = gst_caps_new_empty_simple("audio/x-raw");
         gst_device_monitor_add_filter(monitor, "Audio/Source", caps);
         gst_device_monitor_add_filter(monitor, "Audio/Duplex", caps);
@@ -119,8 +122,10 @@ void CallDevices::init()
         gst_bus_add_watch(bus, newBusMessage, nullptr);
         gst_object_unref(bus);
         if (!gst_device_monitor_start(monitor)) {
-            qCritical() << "WebRTC: failed to start device monitor";
+            qCCritical(voip) << "Failed to start device monitor";
             return;
+        } else {
+            qCDebug(voip) << "Device monitor started";
         }
     }
 }

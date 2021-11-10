@@ -31,6 +31,7 @@ include(KDECompilerSettings NO_POLICY_SCOPE)
 include(ECMAddAppIcon)
 include(KDEGitCommitHooks)
 include(ECMCheckOutboundLicense)
+include(ECMQtDeclareLoggingCategory)
 
 if(NEOCHAT_FLATPAK)
     include(cmake/Flatpak.cmake)

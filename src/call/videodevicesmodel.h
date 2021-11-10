@@ -7,14 +7,15 @@
 #pragma once
 
 #include <QAbstractListModel>
+#include <QSize>
 #include <optional>
 
 typedef struct _GstDevice GstDevice;
 
 struct VideoSource {
     struct Caps {
-        QString resolution;
-        QList<QString> frameRates;
+        QSize resolution;
+        QList<float> framerates;
     };
 
     QString name;

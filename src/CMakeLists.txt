@@ -37,10 +37,10 @@ add_executable(neochat
     blurhashimageprovider.cpp
     joinrulesevent.cpp
     call/callmanager.cpp
-    call/calldevices.cpp
     call/callsession.cpp
-    call/videodevicesmodel.cpp
-    call/audiodevicesmodel.cpp
+    call/audiosources.cpp
+    call/videosources.cpp
+    call/devicemonitor.cpp
     ../res.qrc
 )
 
@@ -49,6 +49,13 @@ if(Quotient_VERSION_MINOR GREATER 6)
 else()
     target_sources(neochat PRIVATE neochataccountregistry.cpp)
 endif()
+
+ecm_qt_declare_logging_category(neochat
+    HEADER "voiplogging.h"
+    IDENTIFIER "voip"
+    CATEGORY_NAME "org.kde.voip"
+)
+
 
 ecm_add_app_icon(NEOCHAT_ICON ICONS ${CMAKE_SOURCE_DIR}/128-logo.png)
 

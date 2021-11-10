@@ -16,6 +16,7 @@
 #endif
 #include <KNotificationReplyAction>
 
+#include "call/callmanager.h"
 #include "controller.h"
 #include "neochatconfig.h"
 #include "roommanager.h"
@@ -105,6 +106,40 @@ void NotificationsManager::postInviteNotification(NeoChatRoom *room, const QStri
 
     notification->setHint(QStringLiteral("x-kde-origin-name"), room->localUser()->id());
 
+    notification->sendEvent();
+    m_notifications.insert(room->id(), notification);
+}
+
+void NotificationsManager::postCallInviteNotification(NeoChatRoom *room, const QString &roomName, const QString &sender, const QImage &icon, bool video)
+{
+    if (!NeoChatConfig::self()->showNotifications()) {
+        return;
+    }
+
+    QPixmap img;
+    img.convertFromImage(icon);
+    KNotification *notification = new KNotification("message");
+
+    if (sender == roomName) {
+        notification->setTitle(sender);
+    } else {
+        notification->setTitle(i18n("%1 (%2)", sender, roomName));
+    }
+
+    notification->setText(video ? i18n("%1 is inviting you to a video call", sender) : i18n("%1 is inviting you to a voice call", sender));
+    notification->setPixmap(img);
+    notification->setDefaultAction(i18n("Open NeoChat in this room"));
+    connect(notification, &KNotification::defaultActivated, this, [=]() {
+        RoomManager::instance().enterRoom(room);
+        Q_EMIT Controller::instance().showWindow();
+    });
+    notification->setActions({i18n("Accept"), i18n("Decline")});
+    connect(notification, &KNotification::action1Activated, this, [=]() {
+        CallManager::instance().acceptCall();
+    });
+    connect(notification, &KNotification::action2Activated, this, [=]() {
+        CallManager::instance().hangupCall();
+    });
     notification->sendEvent();
     m_notifications.insert(room->id(), notification);
 }
