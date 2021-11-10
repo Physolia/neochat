@@ -36,6 +36,7 @@ add_executable(neochat
     blurhash.cpp
     blurhashimageprovider.cpp
     joinrulesevent.cpp
+    spacechildrenmodel.cpp
     ../res.qrc
 )
 

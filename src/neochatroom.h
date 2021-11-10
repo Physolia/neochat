@@ -20,6 +20,7 @@
 
 #include "neochatuser.h"
 #include "room.h"
+#include "spacechildrenmodel.h"
 
 using namespace Quotient;
 
@@ -34,6 +35,9 @@ class NeoChatRoom : public Room
     Q_PROPERTY(bool readMarkerLoaded READ readMarkerLoaded NOTIFY readMarkerLoadedChanged)
     Q_PROPERTY(QDateTime lastActiveTime READ lastActiveTime NOTIFY lastActiveTimeChanged)
     Q_PROPERTY(bool isInvite READ isInvite NOTIFY isInviteChanged)
+    // space-ness is determined at creation time and unchanging
+    Q_PROPERTY(bool isSpace READ isSpace CONSTANT)
+    Q_PROPERTY(SpaceChildrenModel *spaceChildren READ spaceChildren NOTIFY spaceChildrenChanged)
     Q_PROPERTY(QString joinRule READ joinRule CONSTANT)
     Q_PROPERTY(QString htmlSafeDisplayName READ htmlSafeDisplayName NOTIFY displayNameChanged)
 
@@ -118,9 +122,12 @@ public:
     Q_INVOKABLE [[nodiscard]] bool canSendState(const QString &eventType) const;
 
     bool isInvite() const;
+    [[nodiscard]] bool isSpace();
 
     Q_INVOKABLE QString htmlSafeName() const;
     Q_INVOKABLE QString htmlSafeDisplayName() const;
+
+    [[nodiscard]] SpaceChildrenModel *spaceChildren();
 
 #ifndef QUOTIENT_07
     Q_INVOKABLE QString htmlSafeMemberName(const QString &userId) const
@@ -158,6 +165,7 @@ Q_SIGNALS:
     void lastActiveTimeChanged();
     void isInviteChanged();
     void displayNameChanged();
+    void spaceChildrenChanged();
 
 public Q_SLOTS:
     void uploadFile(const QUrl &url, const QString &body = QString());

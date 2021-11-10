@@ -32,6 +32,7 @@
 #include "jobs/downloadfilejob.h"
 #include "neochatconfig.h"
 #include "notificationsmanager.h"
+#include "spacechildrenmodel.h"
 #include "stickerevent.h"
 #include "user.h"
 #include "utils.h"
@@ -58,6 +59,7 @@ NeoChatRoom::NeoChatRoom(Connection *connection, QString roomId, JoinState joinS
         }
     });
     connect(this, &Room::displaynameChanged, this, &NeoChatRoom::displayNameChanged);
+    connect(this, &Quotient::Room::baseStateLoaded, this, &NeoChatRoom::spaceChildrenChanged);
 }
 
 void NeoChatRoom::uploadFile(const QUrl &url, const QString &body)
@@ -715,6 +717,19 @@ bool NeoChatRoom::isInvite() const
     return joinState() == JoinState::Invite;
 }
 
+bool NeoChatRoom::isSpace()
+{
+    const RoomCreateEvent *creationEvent = creation();
+    const QJsonObject contentJson = creationEvent->contentJson();
+    QJsonObject::const_iterator typeIter = contentJson.find("type");
+    if (typeIter != contentJson.end()) {
+        if (typeIter.value().toString() == "m.space") {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool NeoChatRoom::isUserBanned(const QString &user) const
 {
     return getCurrentState<RoomMemberEvent>(user)->membership() == MembershipType::Ban;
@@ -756,4 +771,22 @@ QCoro::Task<void> NeoChatRoom::doDeleteMessagesByUser(const QString &user)
             break;
         }
     }
+}
+
+SpaceChildrenModel *NeoChatRoom::spaceChildren()
+{
+    QList<Room *> children;
+    // TODO: Quotient doesn't expose a list of all state events to us yet
+    for (const auto &event : *stateEventsOfType("m.space.child")) {
+        const QString id = event->stateKey();
+        qWarning() << id;
+        Room *room = connection()->room(id, JoinState::Join | JoinState::Invite | JoinState::Leave | JoinState::Knock | JoinState::Invalid);
+        if (room == nullptr) {
+            // TODO: fetch room data
+            room = new Room(connection(), id, JoinState::Invalid);
+        }
+        connect(room, &NeoChatRoom::baseStateLoaded, this, &NeoChatRoom::spaceChildrenChanged);
+        children.append(room);
+    }
+    return new SpaceChildrenModel(this, children, connection());
 }

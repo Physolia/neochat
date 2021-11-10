@@ -20,6 +20,7 @@
         <file>imports/NeoChat/Component/TypingPane.qml</file>
         <file>imports/NeoChat/Component/ShimmerGradient.qml</file>
         <file>imports/NeoChat/Component/QuickSwitcher.qml</file>
+        <file>imports/NeoChat/Component/RoomListItem.qml</file>
         <file>imports/NeoChat/Component/ChatBox</file>
         <file>imports/NeoChat/Component/ChatBox/ChatBox.qml</file>
         <file>imports/NeoChat/Component/ChatBox/ChatBar.qml</file>

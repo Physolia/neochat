@@ -5,3 +5,4 @@ FancyEffectsContainer 1.0 FancyEffectsContainer.qml
 TypingPane 1.0 TypingPane.qml
 QuickSwitcher 1.0 QuickSwitcher.qml
 ShimmerGradient 1.0 ShimmerGradient.qml
+RoomListItem 1.0 RoomListItem.qml

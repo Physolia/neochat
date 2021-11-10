@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2019 Black Hat <bhat@encom.eu.org>
 // SPDX-License-Identifier: GPL-3.0-only
 
+// has same QML API as SpaceChildrenModel
+
 #pragma once
 
 #include <QAbstractListModel>
@@ -9,6 +11,8 @@
 #include "connection.h"
 #include "csapi/definitions/public_rooms_response.h"
 #include "csapi/list_public_rooms.h"
+
+#include "neochatroom.h"
 
 using namespace Quotient;
 

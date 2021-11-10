@@ -93,70 +93,8 @@ Kirigami.ScrollablePage {
             if(publicRoomListModel.hasMore && contentHeight - contentY < publicRoomsListView.height + 200)
                 publicRoomListModel.next();
         }
-        delegate: Kirigami.AbstractListItem {
-            property bool justJoined: false
-            width: publicRoomsListView.width
-            onClicked: {
-                if (!isJoined) {
-                    Controller.joinRoom(roomID)
-                    justJoined = true;
-                } else {
-                    RoomManager.enterRoom(connection.room(roomID))
-                }
-                applicationWindow().pageStack.layers.pop();
-            }
-            contentItem: RowLayout {
-                Kirigami.Avatar {
-                    Layout.preferredWidth: Kirigami.Units.gridUnit * 2
-                    Layout.preferredHeight: Kirigami.Units.gridUnit * 2
-
-                    source: model.avatar ? ("image://mxc/" + model.avatar) : ""
-                    name: name
-                }
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Kirigami.Heading {
-                            Layout.fillWidth: true
-                            level: 4
-                            text: name
-                            font.bold: true
-                            textFormat: Text.PlainText
-                            elide: Text.ElideRight
-                            wrapMode: Text.NoWrap
-                        }
-                        Label {
-                            visible: isJoined || justJoined
-                            text: i18n("Joined")
-                            color: Kirigami.Theme.linkColor
-                        }
-                    }
-                    Label {
-                        Layout.fillWidth: true
-                        visible: text
-                        text: topic ? topic.replace(/(\r\n\t|\n|\r\t)/gm," ") : ""
-                        textFormat: Text.PlainText
-                        elide: Text.ElideRight
-                        wrapMode: Text.NoWrap
-                    }
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Kirigami.Icon {
-                            source: "user"
-                            color: Kirigami.Theme.disabledTextColor
-                            implicitHeight: Kirigami.Units.iconSizes.small
-                            implicitWidth: Kirigami.Units.iconSizes.small
-                        }
-                        Label {
-                            text: memberCount + " " + (alias ?? roomID)
-                            color: Kirigami.Theme.disabledTextColor
-                            elide: Text.ElideRight
-                            Layout.fillWidth: true
-                        }
-                    }
-                }
-            }
+        delegate: RoomListItem {
+            connection: root.connection
         }
     }
 }

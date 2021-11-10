@@ -228,8 +228,17 @@ Kirigami.ScrollablePage {
     }
 
     ListView {
+        id: spaceChildrenView
+        visible: page.currentRoom.isSpace
+        model: page.currentRoom.spaceChildren
+        delegate: RoomListItem {
+            connection: Controller.activeConnection
+        }
+    }
+
+    ListView {
         id: messageListView
-        visible: !invitation.visible
+        visible: !invitation.visible && !page.currentRoom.isSpace
 
         readonly property int largestVisibleIndex: count > 0 ? indexAt(contentX + (width / 2), contentY + height - 1) : -1
         readonly property bool isLoaded: page.width * page.height > 10
@@ -761,7 +770,7 @@ Kirigami.ScrollablePage {
 
     footer: ChatBox {
         id: chatBox
-        visible: !invitation.visible && !(messageListView.count === 0 && !currentRoom.allHistoryLoaded)
+        visible: !invitation.visible && !(messageListView.count === 0 && !currentRoom.allHistoryLoaded) && !page.currentRoom.isSpace
         onMessageSent: {
             if (!messageListView.atYEnd) {
                 goToLastMessage();
