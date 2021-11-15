@@ -23,6 +23,7 @@ TimelineContainer {
 
     innerObject: Image {
         id: img
+        source: currentRoom.makeMediaUrl(eventId, model.content.file ? model.content.file.url : model.content.url)
 
         property var content: model.content
         readonly property bool isAnimated: contentType === "image/gif"
@@ -36,7 +37,6 @@ TimelineContainer {
         readonly property string mediaId: isThumbnail ? content.thumbnailMediaId : content.mediaId
 
         Layout.maximumWidth: imageDelegate.bubbleMaxWidth
-        source: "image://mxc/" + mediaId
 
         Image {
             anchors.fill: parent

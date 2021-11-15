@@ -52,6 +52,7 @@
 #include "neochatconfig.h"
 #include "neochatroom.h"
 #include "neochatuser.h"
+#include "networkaccessmanager.h"
 #include "notificationsmanager.h"
 #include "publicroomlistmodel.h"
 #include "roomlistmodel.h"
@@ -65,6 +66,17 @@
 #ifdef HAVE_COLORSCHEME
 #include "colorschemer.h"
 #endif
+
+#include <QNetworkAccessManager>
+#include <QQmlNetworkAccessManagerFactory>
+
+class NAMF : public QQmlNetworkAccessManagerFactory
+{
+    QNetworkAccessManager *create(QObject *) override
+    {
+        return NetworkAccessManager::instance();
+    }
+};
 
 using namespace Quotient;
 
@@ -221,6 +233,7 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextObject(new KLocalizedContext(&engine));
     KLocalizedString::setApplicationDomain("neochat");
     QObject::connect(&engine, &QQmlApplicationEngine::quit, &app, &QCoreApplication::quit);
+    engine.setNetworkAccessManagerFactory(new NAMF());
 
     QCommandLineParser parser;
     parser.setApplicationDescription(i18n("Client for the matrix communication protocol"));

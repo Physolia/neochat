@@ -14,6 +14,7 @@ ApplicationWindow {
     property string blurhash: ""
     property int imageWidth: -1
     property int imageHeight: -1
+    property alias source: image.source
 
     flags: Qt.FramelessWindowHint | Qt.WA_TranslucentBackground
 
@@ -44,8 +45,6 @@ ApplicationWindow {
         height: Math.min(root.imageHeight !== -1 ? root.imageWidth : sourceSize.height, root.height)
 
         fillMode: Image.PreserveAspectFit
-
-        source: localPath
 
         Image {
             anchors.centerIn: parent
