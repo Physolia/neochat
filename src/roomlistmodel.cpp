@@ -230,10 +230,12 @@ void RoomListModel::handleNotifications()
             User *sender = room->user(notification["event"]["sender"].toString());
             QString eventId = notification["event"]["event_id"].toString();
             QString body;
+            bool canReply = true;
             oldNotifications += eventId;
             if (notification["event"]["type"] == QStringLiteral("m.room.encrypted")) {
                 const auto decrypted = connection()->decryptNotification(notification);
                 body = decrypted.isEmpty() ? i18n("Encrypted message") : decrypted["content"]["body"].toString();
+                canReply = false;
             } else {
                 body = notification["event"]["content"]["body"].toString();
             }
@@ -243,7 +245,7 @@ void RoomListModel::handleNotifications()
             } else {
                 avatar_image = room->avatar(128);
             }
-            NotificationsManager::instance().postNotification(room, room->displayName(), sender->displayname(room), body, avatar_image, eventId);
+            NotificationsManager::instance().postNotification(room, room->displayName(), sender->displayname(room), body, avatar_image, eventId, canReply);
         }
     });
 }
