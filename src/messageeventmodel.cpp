@@ -48,6 +48,7 @@ QHash<int, QByteArray> MessageEventModel::roleNames() const
     roles[IsEditedRole] = "isEdited";
     roles[SourceRole] = "source";
     roles[FormattedBodyRole] = "formattedBody";
+    roles[MediaUrlRole] = "mediaUrl";
     return roles;
 }
 
@@ -748,6 +749,20 @@ QVariant MessageEventModel::data(const QModelIndex &idx, int role) const
         }
 
         return res;
+    }
+
+    if (role == MediaUrlRole) {
+        if (auto e = eventCast<const RoomMessageEvent>(&evt)) {
+            if (!e->hasFileContent()) {
+                return QVariant();
+            }
+            if (e->content()->originalJson.contains(QStringLiteral("file")) && e->content()->originalJson["file"].toObject().contains(QStringLiteral("url"))) {
+                return m_currentRoom->makeMediaUrl(e->id(), e->content()->originalJson["file"]["url"].toString());
+            }
+            if (e->content()->originalJson.contains(QStringLiteral("url"))) {
+                return m_currentRoom->makeMediaUrl(e->id(), e->content()->originalJson["url"].toString());
+            }
+        }
     }
 
     return {};

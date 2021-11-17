@@ -29,6 +29,7 @@ public:
         AnnotationRole,
         UserMarkerRole,
         FormattedBodyRole,
+        MediaUrlRole,
 
         FileMimetypeIcon,
 

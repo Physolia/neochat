@@ -23,7 +23,7 @@ TimelineContainer {
 
     innerObject: Image {
         id: img
-        source: currentRoom.makeMediaUrl(eventId, model.content.file ? model.content.file.url : model.content.url)
+        source: model.mediaUrl
 
         property var content: model.content
         readonly property bool isAnimated: contentType === "image/gif"
