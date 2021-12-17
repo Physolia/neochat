@@ -236,7 +236,7 @@ Item {
         target: RoomManager
 
         function onCurrentRoomChanged() {
-            chatBar.userAutocompleted = {};
+            actionsHandler.clearMentions()
         }
     }
 

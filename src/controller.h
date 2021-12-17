@@ -13,7 +13,6 @@ class QKeySequences;
 class QNetworkConfigurationManager;
 
 #include "connection.h"
-#include "csapi/list_public_rooms.h"
 #include "room.h"
 #include "settings.h"
 #include "user.h"

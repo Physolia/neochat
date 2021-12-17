@@ -20,11 +20,6 @@ ToolBar {
     property alias textField: inputField
     property alias emojiPaneOpened: emojiButton.checked
 
-    // store each user we autoComplete here, this will be helpful later to generate
-    // the matrix.to links.
-    // This use an hack to define: https://doc.qt.io/qt-5/qml-var.html#property-value-initialization-semantics
-    property var userAutocompleted: ({})
-
     signal closeAllTriggered()
     signal inputFieldForceActiveFocusTriggered()
     signal messageSent()
@@ -70,6 +65,10 @@ ToolBar {
 
             TextArea {
                 id: inputField
+
+                textFormat: Text.PlainText
+
+                Component.onCompleted: actionsHandler.initMentions(inputField.textDocument)
                 focus: true
                 /* Some QQC2 styles will have their own predefined backgrounds for TextAreas.
                 * Make sure there is no background since we are using the ToolBar background.
@@ -102,7 +101,6 @@ ToolBar {
 
                 Kirigami.Theme.colorSet: Kirigami.Theme.View
                 Kirigami.Theme.inherit: false
-                Kirigami.SpellChecking.enabled: true
 
                 color: Kirigami.Theme.textColor
                 selectionColor: Kirigami.Theme.highlightColor
@@ -413,8 +411,9 @@ ToolBar {
             actionsHandler.postEdit(inputField.text);
         } else {
             // send normal message
-            actionsHandler.postMessage(inputField.text.trim(), ChatBoxHelper.attachmentPath,
-                ChatBoxHelper.replyEventId, ChatBoxHelper.editEventId, userAutocompleted, this.customEmojiModel);
+            inputField.text = inputField.text.trim()
+            actionsHandler.postMessage(ChatBoxHelper.attachmentPath,
+                ChatBoxHelper.replyEventId, ChatBoxHelper.editEventId, this.customEmojiModel);
         }
         currentRoom.markAllMessagesAsRead();
         inputField.clear();
@@ -429,7 +428,7 @@ ToolBar {
         if (completionMenu.completionType === ChatDocumentHandler.User
             && completionMenu.currentDisplayText.length > 0
             && completionMenu.currentItem.userId.length > 0) {
-            userAutocompleted[completionMenu.currentDisplayText] = completionMenu.currentItem.userId;
+            actionsHandler.addUserMention(inputField.cursorPosition, completionMenu.currentDisplayText, completionMenu.currentItem.userId)
         }
     }
 }

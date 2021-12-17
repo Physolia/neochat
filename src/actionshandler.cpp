@@ -4,6 +4,7 @@
 #include "actionshandler.h"
 #include "controller.h"
 
+#include <QSyntaxHighlighter>
 #include <csapi/joining.h>
 #include <events/roommessageevent.h>
 
@@ -15,9 +16,55 @@
 #include "customemojimodel.h"
 #include "roommanager.h"
 
+class SyntaxHighlighter : public QSyntaxHighlighter
+{
+public:
+    struct CursorData {
+        QTextCursor cursor;
+        QString displayName;
+        QString userId;
+    };
+    std::vector<CursorData> cursors;
+    QTextCharFormat f;
+    SyntaxHighlighter(QObject *parent)
+        : QSyntaxHighlighter(parent)
+    {
+        f.setFontWeight(QFont::Bold);
+        f.setForeground(Qt::blue);
+    }
+    void highlightBlock(const QString &text) override
+    {
+        Q_UNUSED(text)
+        cursors.erase(std::remove_if(cursors.begin(),
+                                     cursors.end(),
+                                     [this](const CursorData &cursor) {
+                                         if (cursor.cursor.selectedText() != cursor.displayName) {
+                                             return true;
+                                         }
+                                         if (currentBlock() == cursor.cursor.block()) {
+                                             setFormat(cursor.cursor.selectionStart(), cursor.cursor.selectedText().size(), f);
+                                         }
+                                         return false;
+                                     }),
+                      cursors.end());
+    }
+};
+
+void ActionsHandler::addUserMention(int pos, const QString &displayName, const QString &userId)
+{
+    QTextCursor cursor(m_syntaxHighlighter->document());
+    auto begin = pos - displayName.size();
+    cursor.setPosition(begin);
+    cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, pos - begin);
+    cursor.setKeepPositionOnInsert(true);
+    m_syntaxHighlighter->cursors.push_back({cursor, displayName, userId});
+    m_syntaxHighlighter->rehighlight();
+}
+
 ActionsHandler::ActionsHandler(QObject *parent)
     : QObject(parent)
 {
+    m_syntaxHighlighter = new SyntaxHighlighter(this);
 }
 
 ActionsHandler::~ActionsHandler(){};
@@ -72,7 +119,7 @@ void ActionsHandler::postEdit(const QString &text)
                 if (!match.hasMatch()) {
                     // should not happen but still make sure to send the message normally
                     // just in case.
-                    postMessage(text, QString(), QString(), QString(), QVariantMap(), nullptr);
+                    postMessage(QString(), QString(), QString(), nullptr);
                 }
                 const QString regex = match.captured(1);
                 const QString replacement = match.captured(2);
@@ -98,15 +145,22 @@ void ActionsHandler::postEdit(const QString &text)
     }
 }
 
-void ActionsHandler::postMessage(const QString &text,
-                                 const QString &attachmentPath,
-                                 const QString &replyEventId,
-                                 const QString &editEventId,
-                                 const QVariantMap &usernames,
-                                 CustomEmojiModel *cem)
+void ActionsHandler::postMessage(const QString &attachmentPath, const QString &replyEventId, const QString &editEventId, CustomEmojiModel *cem)
 {
-    QString rawText = text;
-    auto stringList = text.split(QStringLiteral("```"));
+    QString rawText = m_syntaxHighlighter->document()->toPlainText();
+
+    auto document = m_syntaxHighlighter->document()->clone();
+
+    for (const auto &cursor : m_syntaxHighlighter->cursors) {
+        auto blockNumber = cursor.cursor.blockNumber();
+        auto block = document->findBlockByNumber(blockNumber);
+        QTextCursor newCursor(block);
+        newCursor.setPosition(cursor.cursor.selectionStart());
+        newCursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, cursor.displayName.size());
+        newCursor.insertText(QStringLiteral("[%1](https://matrix.to/#/%2)").arg(cursor.displayName, cursor.userId));
+    }
+
+    auto stringList = document->toPlainText().split(QStringLiteral("```"));
     QString cleanedText;
     const auto count = stringList.count();
     for (int i = 0; i < count; i++) {
@@ -128,9 +182,6 @@ void ActionsHandler::postMessage(const QString &text,
         return cem->preprocessText(it);
     };
 
-    for (auto it = usernames.constBegin(); it != usernames.constEnd(); it++) {
-        cleanedText = cleanedText.replace(it.key(), "[" + it.key() + "](https://matrix.to/#/" + it.value().toString() + ")");
-    }
 
     if (attachmentPath.length() > 0) {
         m_room->uploadFile(attachmentPath, cleanedText);
@@ -239,7 +290,7 @@ void ActionsHandler::postMessage(const QString &text,
             rawText = rawText.remove(0, joinShortPrefix.length());
         }
         const QStringList splittedText = rawText.split(" ");
-        if (text.count() == 0) {
+        if (splittedText.count() == 0) {
             Q_EMIT showMessage(MessageType::Error, i18n("Invalid command"));
             return;
         }
@@ -344,4 +395,14 @@ void ActionsHandler::postMessage(const QString &text,
         messageEventType = RoomMessageEvent::MsgType::Notice;
     }
     m_room->postMessage(rawText, preprocess(m_room->preprocessText(cleanedText)), messageEventType, replyEventId, editEventId);
+}
+
+void ActionsHandler::initMentions(QQuickTextDocument *document)
+{
+    m_syntaxHighlighter->setDocument(document->textDocument());
+}
+
+void ActionsHandler::clearMentions()
+{
+    m_syntaxHighlighter->cursors.clear();
 }

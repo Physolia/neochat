@@ -4,6 +4,7 @@
 #pragma once
 
 #include <QObject>
+#include <QQuickTextDocument>
 
 #include "connection.h"
 #include "neochatroom.h"
@@ -11,6 +12,7 @@
 using namespace Quotient;
 
 class CustomEmojiModel;
+class SyntaxHighlighter;
 
 /// \brief Handles user interactions with NeoChat (joining room, creating room,
 /// sending message). Account management is handled by Controller.
@@ -40,6 +42,10 @@ public:
     [[nodiscard]] NeoChatRoom *room() const;
     void setRoom(NeoChatRoom *room);
 
+    Q_INVOKABLE void initMentions(QQuickTextDocument *document);
+    Q_INVOKABLE void clearMentions();
+    Q_INVOKABLE void addUserMention(int i, const QString &displayName, const QString &userId);
+
 Q_SIGNALS:
     /// \brief Show error or information message.
     ///
@@ -54,12 +60,7 @@ public Q_SLOTS:
     /// \brief Post a message.
     ///
     /// This also interprets commands if any.
-    void postMessage(const QString &text,
-                     const QString &attachementPath,
-                     const QString &replyEventId,
-                     const QString &editEventId,
-                     const QVariantMap &usernames,
-                     CustomEmojiModel *cem);
+    void postMessage(const QString &attachementPath, const QString &replyEventId, const QString &editEventId, CustomEmojiModel *cem);
 
     /// \brief Send edit instructions (.e.g s/hallo/hello/)
     ///
@@ -70,4 +71,5 @@ public Q_SLOTS:
 private:
     Connection *m_connection = nullptr;
     NeoChatRoom *m_room = nullptr;
+    SyntaxHighlighter *m_syntaxHighlighter;
 };
