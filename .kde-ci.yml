@@ -12,6 +12,7 @@ Dependencies:
     'frameworks/syntax-highlighting': '@stable'
     'frameworks/kitemmodels': '@stable'
     'frameworks/knotifications': '@stable'
+    'frameworks/kconfigwidgets': '@stable'
     'libraries/kquickimageeditor': '@stable'
 - 'on': ['Windows', 'Linux', 'FreeBSD']
   'require':
@@ -19,7 +20,6 @@ Dependencies:
     'frameworks/kio': '@stable'
     'frameworks/kwindowsystem': '@stable'
     'frameworks/sonnet': '@stable'
-    'frameworks/kconfigwidgets': '@stable'
 - 'on': ['Linux', 'FreeBSD']
   'require':
     'frameworks/kdbusaddons': '@stable'

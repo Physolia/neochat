@@ -36,6 +36,7 @@ add_executable(neochat
     blurhash.cpp
     blurhashimageprovider.cpp
     joinrulesevent.cpp
+    colorschemer.cpp
     ../res.qrc
 )
 
@@ -50,19 +51,17 @@ ecm_add_app_icon(NEOCHAT_ICON ICONS ${CMAKE_SOURCE_DIR}/128-logo.png)
 target_sources(neochat PRIVATE ${NEOCHAT_ICON})
 
 if(NOT ANDROID)
-    target_sources(neochat PRIVATE colorschemer.cpp)
     if (NOT WIN32 AND NOT APPLE)
         target_sources(neochat PRIVATE trayicon_sni.cpp)
     else()
         target_sources(neochat PRIVATE trayicon.cpp)
     endif()
-    target_link_libraries(neochat PRIVATE KF5::ConfigWidgets KF5::WindowSystem KF5::SonnetCore)
-    target_compile_definitions(neochat PRIVATE -DHAVE_COLORSCHEME)
+    target_link_libraries(neochat PRIVATE KF5::WindowSystem KF5::SonnetCore)
     target_compile_definitions(neochat PRIVATE -DHAVE_WINDOWSYSTEM)
 endif()
 
 target_include_directories(neochat PRIVATE ${CMAKE_BINARY_DIR})
-target_link_libraries(neochat PRIVATE Qt::Quick Qt::Qml Qt::Gui Qt::Network Qt::QuickControls2 KF5::I18n KF5::Kirigami2 KF5::Notifications KF5::ConfigCore KF5::ConfigGui KF5::CoreAddons Quotient cmark::cmark ${QTKEYCHAIN_LIBRARIES} QCoro::QCoro)
+target_link_libraries(neochat PRIVATE Qt::Quick Qt::Qml Qt::Gui Qt::Network Qt::QuickControls2 KF5::I18n KF5::Kirigami2 KF5::Notifications KF5::ConfigCore KF5::ConfigGui KF5::CoreAddons KF5::ConfigWidgets Quotient cmark::cmark ${QTKEYCHAIN_LIBRARIES} QCoro::QCoro)
 kconfig_add_kcfg_files(neochat GENERATE_MOC neochatconfig.kcfgc)
 
 if(NEOCHAT_FLATPAK)

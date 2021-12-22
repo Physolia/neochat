@@ -49,7 +49,7 @@ set_package_properties(Qt5 PROPERTIES
     TYPE REQUIRED
     PURPOSE "Basic application components"
 )
-find_package(KF5 ${KF5_MIN_VERSION} COMPONENTS Kirigami2 I18n Notifications Config CoreAddons)
+find_package(KF5 ${KF5_MIN_VERSION} COMPONENTS Kirigami2 I18n Notifications Config CoreAddons ConfigWidgets)
 set_package_properties(KF5 PROPERTIES
     TYPE REQUIRED
     PURPOSE "Basic application components"
@@ -73,7 +73,7 @@ if(ANDROID)
     )
 else()
     find_package(Qt5 ${QT_MIN_VERSION} COMPONENTS Widgets)
-    find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS QQC2DesktopStyle ConfigWidgets KIO WindowSystem Sonnet)
+    find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS QQC2DesktopStyle KIO WindowSystem Sonnet)
     set_package_properties(KF5QQC2DesktopStyle PROPERTIES
         TYPE RUNTIME
     )
