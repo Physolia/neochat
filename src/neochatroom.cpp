@@ -332,7 +332,7 @@ QString NeoChatRoom::eventToString(const RoomEvent &evt, Qt::TextFormat format, 
 
     using namespace Quotient;
 #ifdef QUOTIENT_07
-    return switchOnType(
+    return visit(
 #else
     return visit(
 #endif
