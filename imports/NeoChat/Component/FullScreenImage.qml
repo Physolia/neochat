@@ -10,7 +10,6 @@ ApplicationWindow {
     id: root
 
     property string filename
-    property url localPath
     property string blurhash: ""
     property int imageWidth: -1
     property int imageHeight: -1

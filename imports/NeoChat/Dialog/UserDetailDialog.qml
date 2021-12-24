@@ -54,7 +54,6 @@ Kirigami.OverlaySheet {
                         if (avatarMediaId) {
                             fullScreenImage.createObject(parent, {
                                 filename: displayName,
-                                localPath: room.urlToMxcUrl(avatarUrl),
                                 source: root.room.connection.makeMediaUrl("mxc://" + avatarMediaId),
                             }).showFullScreen()
                         }
