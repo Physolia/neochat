@@ -134,6 +134,7 @@ void ActionsHandler::postMessage(const QString &text,
 
     if (attachmentPath.length() > 0) {
         m_room->uploadFile(attachmentPath, cleanedText);
+        return;
     }
 
     if (cleanedText.length() == 0) {

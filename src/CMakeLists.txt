@@ -59,6 +59,11 @@ if(NOT ANDROID)
     target_link_libraries(neochat PRIVATE KF5::ConfigWidgets KF5::WindowSystem KF5::SonnetCore)
     target_compile_definitions(neochat PRIVATE -DHAVE_COLORSCHEME)
     target_compile_definitions(neochat PRIVATE -DHAVE_WINDOWSYSTEM)
+    target_compile_definitions(neochat PRIVATE -DHAVE_FILEMETADATA)
+
+    if(Quotient_VERSION_MINOR GREATER 6)
+        target_link_libraries(neochat PRIVATE KF5::FileMetaData)
+    endif()
 endif()
 
 target_include_directories(neochat PRIVATE ${CMAKE_BINARY_DIR})

@@ -7,6 +7,7 @@
 
 #include <QFileInfo>
 #include <QImageReader>
+#include <QMediaResource>
 #include <QMetaObject>
 #include <QMimeDatabase>
 #include <QTextDocument>
@@ -37,6 +38,11 @@
 #include "utils.h"
 
 #include <KLocalizedString>
+#if defined(HAVE_FILEMETADATA) && defined(QUOTIENT_07)
+#include <KFileMetaData/ExtractionResult>
+#include <KFileMetaData/ExtractorCollection>
+#include <KFileMetaData/ExtractorPlugin>
+#endif
 
 NeoChatRoom::NeoChatRoom(Connection *connection, QString roomId, JoinState joinState)
     : Room(connection, std::move(roomId), joinState)
@@ -75,13 +81,105 @@ NeoChatRoom::NeoChatRoom(Connection *connection, QString roomId, JoinState joinS
     });
 }
 
+#if defined(HAVE_FILEMETADATA) && defined(QUOTIENT_07)
+class VideoInfoExtractionResult : public KFileMetaData::ExtractionResult
+{
+public:
+    VideoInfoExtractionResult(const QString &url, const QString &mimetype, const Flags &flags)
+        : KFileMetaData::ExtractionResult(url, mimetype, flags)
+    {
+    }
+
+    void add(KFileMetaData::Property::Property property, const QVariant &value)
+    {
+        if (property == KFileMetaData::Property::Width) {
+            m_dimension.setWidth(value.toInt());
+            return;
+        }
+        if (property == KFileMetaData::Property::Height) {
+            m_dimension.setHeight(value.toInt());
+            return;
+        }
+        if (property == KFileMetaData::Property::Duration) {
+            m_duration = value.toInt();
+        }
+    }
+
+    QSize dimension() const
+    {
+        return m_dimension;
+    }
+
+    int duration() const
+    {
+        return m_duration;
+    }
+
+    void addType(KFileMetaData::Type::Type type)
+    {
+        Q_UNUSED(type)
+    }
+
+    void append(const QString &text)
+    {
+        Q_UNUSED(text)
+    }
+
+private:
+    QSize m_dimension;
+    int m_duration;
+};
+#endif
+
+#ifdef QUOTIENT_07
+Quotient::EventContent::TypedBase *contentFromFile(const QFileInfo &file)
+{
+    auto filePath = file.absoluteFilePath();
+    auto localUrl = QUrl::fromLocalFile(filePath);
+    auto mimeType = QMimeDatabase().mimeTypeForFile(file);
+    auto mimeTypeName = mimeType.name();
+    if (mimeTypeName.startsWith("image/"))
+        return new Quotient::EventContent::ImageContent(localUrl, file.size(), mimeType, QImageReader(filePath).size(), none, file.fileName());
+
+    // duration can only be obtained asynchronously and can only be reliably
+    // done by starting to play the file. Left for a future implementation.
+    if (mimeTypeName.startsWith("video/")) {
+#ifdef HAVE_FILEMETADATA
+        KFileMetaData::ExtractorCollection extractors;
+        QList<KFileMetaData::Extractor *> exList = extractors.fetchExtractors(mimeTypeName);
+        const VideoInfoExtractionResult::Flags extractionLevel = VideoInfoExtractionResult::ExtractMetaData;
+
+        VideoInfoExtractionResult result(filePath, mimeTypeName, extractionLevel);
+        for (KFileMetaData::Extractor *ex : std::as_const(exList)) {
+            ex->extract(&result);
+            if (result.dimension().isValid()) {
+                // TODO pass duration to Quotient too
+                return new Quotient::EventContent::VideoContent(localUrl, file.size(), mimeType, result.dimension(), none, file.fileName());
+            }
+        }
+#endif
+        return new Quotient::EventContent::VideoContent(localUrl, file.size(), mimeType, QMediaResource(localUrl).resolution(), none, file.fileName());
+    }
+
+    if (mimeTypeName.startsWith("audio/"))
+        return new Quotient::EventContent::AudioContent(localUrl, file.size(), mimeType, none, file.fileName());
+    return new Quotient::EventContent::FileContent(localUrl, file.size(), mimeType, none, file.fileName());
+}
+#endif
+
 void NeoChatRoom::uploadFile(const QUrl &url, const QString &body)
 {
     if (url.isEmpty()) {
         return;
     }
 
-    QString txnId = postFile(body.isEmpty() ? url.fileName() : body, url, false);
+#ifdef QUOTIENT_07
+    const QFileInfo localFile{url.toLocalFile()};
+    const QString txnId = postFile(body.isEmpty() ? url.fileName() : body, contentFromFile(localFile));
+#else
+    const QString txnId = postFile(body.isEmpty() ? url.fileName() : body, url, false);
+#endif
+
     setHasFileUploading(true);
     connect(this, &Room::fileTransferCompleted, [this, txnId](const QString &id, const QUrl & /*localFile*/, const QUrl & /*mxcUrl*/) {
         if (id == txnId) {

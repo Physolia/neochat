@@ -73,7 +73,7 @@ if(ANDROID)
     )
 else()
     find_package(Qt5 ${QT_MIN_VERSION} COMPONENTS Widgets)
-    find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS QQC2DesktopStyle ConfigWidgets KIO WindowSystem Sonnet)
+    find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS QQC2DesktopStyle ConfigWidgets KIO WindowSystem Sonnet FileMetaData)
     set_package_properties(KF5QQC2DesktopStyle PROPERTIES
         TYPE RUNTIME
     )
@@ -91,6 +91,10 @@ set_package_properties(Quotient PROPERTIES
     URL "https://github.com/quotient-im/libQuotient/"
     PURPOSE "Talk with matrix server"
 )
+
+if(Quotient_VERSION_MINOR GREATER 6 AND NOT ANDROID)
+    find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS FileMetaData)
+endif()
 
 find_package(cmark)
 set_package_properties(cmark PROPERTIES
