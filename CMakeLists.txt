@@ -73,7 +73,7 @@ if(ANDROID)
     )
 else()
     find_package(Qt5 ${QT_MIN_VERSION} COMPONENTS Widgets)
-    find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS QQC2DesktopStyle ConfigWidgets KIO WindowSystem Sonnet FileMetaData)
+    find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS QQC2DesktopStyle ConfigWidgets KIO WindowSystem Sonnet)
     set_package_properties(KF5QQC2DesktopStyle PROPERTIES
         TYPE RUNTIME
     )
@@ -92,9 +92,8 @@ set_package_properties(Quotient PROPERTIES
     PURPOSE "Talk with matrix server"
 )
 
-if(Quotient_VERSION_MINOR GREATER 6 AND NOT ANDROID)
-    find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS FileMetaData)
-endif()
+include(FindPkgConfig)
+pkg_check_modules(GSTREAMER IMPORTED_TARGET gstreamer-pbutils-1.0>=1.18)
 
 find_package(cmark)
 set_package_properties(cmark PROPERTIES

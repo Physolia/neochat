@@ -20,7 +20,6 @@ Dependencies:
     'frameworks/kwindowsystem': '@stable'
     'frameworks/sonnet': '@stable'
     'frameworks/kconfigwidgets': '@stable'
-    'frameworks/kfilemetadata': '@stable'
 - 'on': ['Linux', 'FreeBSD']
   'require':
     'frameworks/kdbusaddons': '@stable'

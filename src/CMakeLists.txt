@@ -60,14 +60,10 @@ if(NOT ANDROID)
     target_compile_definitions(neochat PRIVATE -DHAVE_COLORSCHEME)
     target_compile_definitions(neochat PRIVATE -DHAVE_WINDOWSYSTEM)
     target_compile_definitions(neochat PRIVATE -DHAVE_FILEMETADATA)
-
-    if(Quotient_VERSION_MINOR GREATER 6)
-        target_link_libraries(neochat PRIVATE KF5::FileMetaData)
-    endif()
 endif()
 
 target_include_directories(neochat PRIVATE ${CMAKE_BINARY_DIR})
-target_link_libraries(neochat PRIVATE Qt::Quick Qt::Qml Qt::Gui Qt::Network Qt::QuickControls2 KF5::I18n KF5::Kirigami2 KF5::Notifications KF5::ConfigCore KF5::ConfigGui KF5::CoreAddons Quotient cmark::cmark ${QTKEYCHAIN_LIBRARIES} QCoro::QCoro)
+target_link_libraries(neochat PRIVATE PkgConfig::GSTREAMER Qt::Quick Qt::Qml Qt::Gui Qt::Network Qt::QuickControls2 KF5::I18n KF5::Kirigami2 KF5::Notifications KF5::ConfigCore KF5::ConfigGui KF5::CoreAddons Quotient cmark::cmark ${QTKEYCHAIN_LIBRARIES} QCoro::QCoro)
 kconfig_add_kcfg_files(neochat GENERATE_MOC neochatconfig.kcfgc)
 
 if(NEOCHAT_FLATPAK)

@@ -7,7 +7,6 @@
 
 #include <QFileInfo>
 #include <QImageReader>
-#include <QMediaResource>
 #include <QMetaObject>
 #include <QMimeDatabase>
 #include <QTextDocument>
@@ -15,6 +14,9 @@
 
 #include <qcoro/qcorosignal.h>
 #include <qcoro/task.h>
+
+#include <gst/gst.h>
+#include <gst/pbutils/pbutils.h>
 
 #include "connection.h"
 #include "csapi/account-data.h"
@@ -38,11 +40,6 @@
 #include "utils.h"
 
 #include <KLocalizedString>
-#if defined(HAVE_FILEMETADATA) && defined(QUOTIENT_07)
-#include <KFileMetaData/ExtractionResult>
-#include <KFileMetaData/ExtractorCollection>
-#include <KFileMetaData/ExtractorPlugin>
-#endif
 
 NeoChatRoom::NeoChatRoom(Connection *connection, QString roomId, JoinState joinState)
     : Room(connection, std::move(roomId), joinState)
@@ -81,57 +78,112 @@ NeoChatRoom::NeoChatRoom(Connection *connection, QString roomId, JoinState joinS
     });
 }
 
-#if defined(HAVE_FILEMETADATA) && defined(QUOTIENT_07)
-class VideoInfoExtractionResult : public KFileMetaData::ExtractionResult
-{
-public:
-    VideoInfoExtractionResult(const QString &url, const QString &mimetype, const Flags &flags)
-        : KFileMetaData::ExtractionResult(url, mimetype, flags)
-    {
-    }
-
-    void add(KFileMetaData::Property::Property property, const QVariant &value)
-    {
-        if (property == KFileMetaData::Property::Width) {
-            m_dimension.setWidth(value.toInt());
-            return;
-        }
-        if (property == KFileMetaData::Property::Height) {
-            m_dimension.setHeight(value.toInt());
-            return;
-        }
-        if (property == KFileMetaData::Property::Duration) {
-            m_duration = value.toInt();
-        }
-    }
-
-    QSize dimension() const
-    {
-        return m_dimension;
-    }
-
-    int duration() const
-    {
-        return m_duration;
-    }
-
-    void addType(KFileMetaData::Type::Type type)
-    {
-        Q_UNUSED(type)
-    }
-
-    void append(const QString &text)
-    {
-        Q_UNUSED(text)
-    }
-
-private:
-    QSize m_dimension;
-    int m_duration;
-};
-#endif
-
 #ifdef QUOTIENT_07
+QSize getDimension(GstDiscovererStreamInfo *info)
+{
+    if (!info) {
+        return QSize();
+    }
+
+    if (GST_IS_DISCOVERER_VIDEO_INFO(info)) {
+        GstDiscovererVideoInfo *vinfo = (GstDiscovererVideoInfo *)info;
+        // It's a video \o/
+
+        int height = gst_discoverer_video_info_get_height(vinfo);
+        int width = gst_discoverer_video_info_get_width(vinfo);
+        return QSize(height, width);
+    }
+
+    GstDiscovererStreamInfo *next = gst_discoverer_stream_info_get_next(info);
+    if (next) {
+        auto dimension = getDimension(next);
+        gst_discoverer_stream_info_unref(next);
+        if (dimension.isValid()) {
+            return dimension;
+        }
+    } else if (GST_IS_DISCOVERER_CONTAINER_INFO(info)) {
+        GList *streams = gst_discoverer_container_info_get_streams(GST_DISCOVERER_CONTAINER_INFO(info));
+
+        for (GList *tmp = streams; tmp; tmp = tmp->next) {
+            GstDiscovererStreamInfo *tmpinf = (GstDiscovererStreamInfo *)tmp->data;
+            auto dimension = getDimension(tmpinf);
+            gst_discoverer_stream_info_list_free(streams);
+            if (dimension.isValid()) {
+                return dimension;
+            }
+        }
+    }
+    return QSize();
+}
+
+QSize getDimension(const QString &localUrl)
+{
+    gst_init(0, NULL);
+    GError *err = nullptr;
+    GstDiscoverer *discoverer = gst_discoverer_new(5 * GST_SECOND, &err);
+    if (!discoverer) {
+        g_print("Error creating discoverer instance: %s\n", err->message);
+        g_error_free(err);
+        return QSize();
+    }
+    const char *url = g_filename_to_uri(localUrl.toStdString().c_str(), NULL, &err);
+    if (err) {
+        g_warning("Couldn't convert filename to URI: %s\n", err->message);
+        g_error_free(err);
+        return QSize();
+    }
+
+    GstDiscovererInfo *info = gst_discoverer_discover_uri(discoverer, url, &err);
+    if (!info) {
+        g_print("Error fetching video info: %s\n", err->message);
+        g_error_free(err);
+        return QSize();
+    }
+    const gchar *uri = gst_discoverer_info_get_uri(info);
+
+    GstDiscovererResult result = gst_discoverer_info_get_result(info);
+    switch (result) {
+    case GST_DISCOVERER_URI_INVALID:
+        g_print("Invalid URI '%s'\n", uri);
+        break;
+    case GST_DISCOVERER_ERROR:
+        g_print("Discoverer error: %s\n", err->message);
+        break;
+    case GST_DISCOVERER_TIMEOUT:
+        g_print("Timeout\n");
+        break;
+    case GST_DISCOVERER_BUSY:
+        g_print("Busy\n");
+        break;
+    case GST_DISCOVERER_MISSING_PLUGINS: {
+        const GstStructure *s;
+        gchar *str;
+
+        s = gst_discoverer_info_get_misc(info);
+        str = gst_structure_to_string(s);
+
+        g_print("Missing plugins: %s\n", str);
+        g_free(str);
+        break;
+    }
+    case GST_DISCOVERER_OK:
+        g_print("Discovered '%s'\n", uri);
+        break;
+    }
+    if (result != GST_DISCOVERER_OK) {
+        return QSize();
+    }
+
+    GstDiscovererStreamInfo *sinfo = gst_discoverer_info_get_stream_info(info);
+    if (!info) {
+        return QSize();
+    }
+    auto dimension = getDimension(sinfo);
+    gst_discoverer_stream_info_unref(sinfo);
+    g_object_unref(discoverer);
+    return dimension;
+}
+
 Quotient::EventContent::TypedBase *contentFromFile(const QFileInfo &file)
 {
     auto filePath = file.absoluteFilePath();
@@ -144,21 +196,9 @@ Quotient::EventContent::TypedBase *contentFromFile(const QFileInfo &file)
     // duration can only be obtained asynchronously and can only be reliably
     // done by starting to play the file. Left for a future implementation.
     if (mimeTypeName.startsWith("video/")) {
-#ifdef HAVE_FILEMETADATA
-        KFileMetaData::ExtractorCollection extractors;
-        QList<KFileMetaData::Extractor *> exList = extractors.fetchExtractors(mimeTypeName);
-        const VideoInfoExtractionResult::Flags extractionLevel = VideoInfoExtractionResult::ExtractMetaData;
-
-        VideoInfoExtractionResult result(filePath, mimeTypeName, extractionLevel);
-        for (KFileMetaData::Extractor *ex : std::as_const(exList)) {
-            ex->extract(&result);
-            if (result.dimension().isValid()) {
-                // TODO pass duration to Quotient too
-                return new Quotient::EventContent::VideoContent(localUrl, file.size(), mimeType, result.dimension(), none, file.fileName());
-            }
-        }
-#endif
-        return new Quotient::EventContent::VideoContent(localUrl, file.size(), mimeType, QMediaResource(localUrl).resolution(), none, file.fileName());
+        auto dimension = getDimension(filePath);
+        // TODO pass duration to Quotient too
+        return new Quotient::EventContent::VideoContent(localUrl, file.size(), mimeType, dimension, none, file.fileName());
     }
 
     if (mimeTypeName.startsWith("audio/"))
