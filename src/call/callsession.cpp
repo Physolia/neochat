@@ -779,7 +779,7 @@ bool CallSession::muted() const
         return false;
     }
     g_object_get(srclevel, "mute", &muted, nullptr);
-    gst_object_unref(srclevel);
+    // gst_object_unref(srclevel); //TODO why does this crash?
     return muted;
 }
 

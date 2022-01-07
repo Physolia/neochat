@@ -85,6 +85,7 @@ if(TARGET QCoro5::Coro)
     target_link_libraries(neochat PRIVATE QCoro5::Coro)
 else()
     target_link_libraries(neochat PRIVATE QCoro::QCoro)
+endif()
 
 if (TARGET PkgConfig::GSTREAMER)
     target_link_libraries(neochat PRIVATE PkgConfig::GSTREAMER)

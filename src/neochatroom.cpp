@@ -74,11 +74,8 @@ NeoChatRoom::NeoChatRoom(Connection *connection, QString roomId, JoinState joinS
         }
         NotificationsManager::instance().postInviteNotification(this, htmlSafeDisplayName(), htmlSafeMemberName(senderId), avatar_image);
     });
-    connect(this, &Room::callEvent, this, [=](Room* room, const RoomEvent* event){
-        CallManager::instance().handleCallEvent(static_cast<NeoChatRoom *>(room), event);
-    });
     connect(this, &Room::callEvent, this, [=](Room *room, const RoomEvent *event) {
-        CallManager::instance().handleCallEvent(static_cast<NeoChatRoom *>(room), event); // TODO figure out why this happens twice for each invite
+        CallManager::instance().handleCallEvent(static_cast<NeoChatRoom *>(room), event);
     });
 }
 

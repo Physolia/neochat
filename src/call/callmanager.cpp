@@ -258,7 +258,7 @@ void CallManager::startCall(NeoChatRoom *room, bool camera)
     m_isInviting = true;
     Q_EMIT isInvitingChanged();
 
-    connect(&CallSession::instance(), &CallSession::offerCreated, this, [=](const QString &sdp, const QVector<Candidate> &candidates) {
+    connect(&CallSession::instance(), &CallSession::offerCreated, this, [this](const QString &sdp, const QVector<Candidate> &candidates) {
         m_room->inviteCall(m_callId, 60000, sdp);
         QJsonArray cands;
         for (const auto &candidate : candidates) {
