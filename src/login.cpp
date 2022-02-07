@@ -63,7 +63,6 @@ void Login::init()
             qWarning() << "Couldn't save access token";
         }
         account.sync();
-        QDir(m_connection->e2eeDataDir()).removeRecursively();
         Controller::instance().addConnection(m_connection);
         Controller::instance().setActiveConnection(m_connection);
         m_connection = nullptr;
