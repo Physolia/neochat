@@ -78,6 +78,7 @@ Kirigami.ScrollablePage {
     actions.main: Kirigami.Action {
         text: i18n("Call")
         icon.name: "call-start"
+        visible: page.currentRoom.joinedCount === 2
         onTriggered: {
             callConfigurationSheet.room = page.currentRoom
             callConfigurationSheet.open()

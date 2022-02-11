@@ -14,35 +14,38 @@ CallManager::CallManager()
 {
     init();
     connect(&CallSession::instance(), &CallSession::stateChanged, this, &CallManager::stateChanged);
-    connect(&Controller::instance(), &Controller::activeConnectionChanged, this, [=]() {
-        Controller::instance().activeConnection()->getTurnServers();
-        connect(Controller::instance().activeConnection(), &Connection::turnServersChanged, [=](const QJsonObject &servers) {
-            auto ttl = servers["ttl"].toInt();
-            QTimer::singleShot(ttl * 800, this, [=]() {
-                Controller::instance().activeConnection()->getTurnServers();
-            });
+    connect(&Controller::instance(), &Controller::activeConnectionChanged, this, &CallManager::updateTurnServers);
+}
 
-            auto password = servers["password"].toString();
-            auto username = servers["username"].toString();
-            auto uris = servers["uris"].toArray();
-
-            m_turnUris.clear();
-            for (const auto &u : uris) {
-                QString uri = u.toString();
-                auto c = uri.indexOf(':');
-                if (c == -1) {
-                    qDebug() << "Invalid TURN URI:" << uri;
-                    continue;
-                }
-                QString scheme = uri.left(c);
-                if (scheme != "turn" && scheme != "turns") {
-                    qDebug() << "Invalid TURN scheme:" << scheme;
-                    continue;
-                }
-                m_turnUris += scheme + QStringLiteral("://") + QUrl::toPercentEncoding(username) + QStringLiteral(":") + QUrl::toPercentEncoding(password)
-                    + QStringLiteral("@") + uri.mid(c + 1);
-            }
+void CallManager::updateTurnServers()
+{
+    Controller::instance().activeConnection()->getTurnServers();
+    connect(Controller::instance().activeConnection(), &Connection::turnServersChanged, [=](const QJsonObject &servers) {
+        auto ttl = servers["ttl"].toInt();
+        QTimer::singleShot(ttl * 800, this, [=]() {
+            Controller::instance().activeConnection()->getTurnServers();
         });
+
+        auto password = servers["password"].toString();
+        auto username = servers["username"].toString();
+        auto uris = servers["uris"].toArray();
+
+        m_turnUris.clear();
+        for (const auto &u : uris) {
+            QString uri = u.toString();
+            auto c = uri.indexOf(':');
+            if (c == -1) {
+                qDebug() << "Invalid TURN URI:" << uri;
+                continue;
+            }
+            QString scheme = uri.left(c);
+            if (scheme != "turn" && scheme != "turns") {
+                qDebug() << "Invalid TURN scheme:" << scheme;
+                continue;
+            }
+            m_turnUris += scheme + QStringLiteral("://") + QUrl::toPercentEncoding(username) + QStringLiteral(":") + QUrl::toPercentEncoding(password)
+                + QStringLiteral("@") + uri.mid(c + 1);
+        }
     });
 }
 
@@ -144,9 +147,12 @@ void CallManager::handleInvite(NeoChatRoom *room, const Quotient::CallInviteEven
 
 void CallManager::handleHangup(NeoChatRoom *room, const Quotient::CallHangupEvent *event)
 {
+    qWarning() << "handling hangup start";
     if (event->callId() != m_callId) {
         return;
     }
+    qWarning() << "handling hangup";
+    CallSession::instance().end();
     Q_EMIT callEnded();
 }
 

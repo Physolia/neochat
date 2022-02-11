@@ -130,7 +130,6 @@ QStringList VideoSources::caps(int index) const
 
 void VideoSources::setCapsIndex(int index)
 {
-    qDebug() << "f1";
     NeoChatConfig::self()->setCameraCaps(index);
     NeoChatConfig::self()->save();
     Q_EMIT capsIndexChanged();
@@ -138,6 +137,5 @@ void VideoSources::setCapsIndex(int index)
 
 int VideoSources::capsIndex() const
 {
-    qDebug() << "f2";
     return NeoChatConfig::self()->cameraCaps();
 }

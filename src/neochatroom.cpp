@@ -75,6 +75,7 @@ NeoChatRoom::NeoChatRoom(Connection *connection, QString roomId, JoinState joinS
         NotificationsManager::instance().postInviteNotification(this, htmlSafeDisplayName(), htmlSafeMemberName(senderId), avatar_image);
     });
     connect(this, &Room::callEvent, this, [=](Room *room, const RoomEvent *event) {
+        qWarning() << *event;
         CallManager::instance().handleCallEvent(static_cast<NeoChatRoom *>(room), event);
     });
 }

@@ -56,6 +56,8 @@ public:
     Q_INVOKABLE void hangupCall();
     Q_INVOKABLE void ignoreCall();
 
+    void updateTurnServers();
+
 Q_SIGNALS:
     void currentCallIdChanged();
     void incomingCall(NeoChatUser *user, NeoChatRoom *room, int timeout, const QString &callId);
