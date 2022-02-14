@@ -30,6 +30,7 @@ class CallManager : public QObject
     Q_PROPERTY(NeoChatRoom *room READ room NOTIFY roomChanged);
     Q_PROPERTY(int lifetime READ lifetime NOTIFY lifetimeChanged); // TODO integrate with 'hasInvite'
     Q_PROPERTY(bool muted READ muted WRITE setMuted NOTIFY mutedChanged);
+    Q_PROPERTY(QQuickItem *item MEMBER m_item); // TODO allow for different devices for each session
 
 public:
     static CallManager &instance()
@@ -57,6 +58,8 @@ public:
     Q_INVOKABLE void ignoreCall();
 
     void updateTurnServers();
+
+    QQuickItem *m_item = nullptr;
 
 Q_SIGNALS:
     void currentCallIdChanged();
@@ -99,4 +102,5 @@ private:
     bool init();
 
     bool m_initialised = false;
+    CallSession *m_session = nullptr;
 };

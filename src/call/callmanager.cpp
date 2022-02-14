@@ -11,9 +11,10 @@
 #include "voiplogging.h"
 
 CallManager::CallManager()
+    : m_session(new CallSession()) // TODO make sure we don't leak these
 {
     init();
-    connect(&CallSession::instance(), &CallSession::stateChanged, this, &CallManager::stateChanged);
+    connect(m_session, &CallSession::stateChanged, this, &CallManager::stateChanged);
     connect(&Controller::instance(), &Controller::activeConnectionChanged, this, &CallManager::updateTurnServers);
 }
 
@@ -84,7 +85,7 @@ void CallManager::handleAnswer(NeoChatRoom *room, const Quotient::CallAnswerEven
     }
 
     if (state() != CallSession::DISCONNECTED && event->callId() == m_callId) {
-        CallSession::instance().acceptAnswer(event->sdp());
+        m_session->acceptAnswer(event->sdp());
     }
     m_isInviting = false;
     Q_EMIT isInvitingChanged();
@@ -107,7 +108,7 @@ void CallManager::handleCandidates(NeoChatRoom *room, const Quotient::CallCandid
         for (const auto &c : event->candidates()) {
             candidates += Candidate{c.toObject()["candidate"].toString(), c.toObject()["sdpMLineIndex"].toInt(), c.toObject()["sdpMid"].toString()};
         }
-        CallSession::instance().acceptICECandidates(candidates);
+        m_session->acceptICECandidates(candidates);
     } else {
         qDebug() << "Disconnected, saving for later";
         // m_incomingCandidates.clear();
@@ -147,12 +148,10 @@ void CallManager::handleInvite(NeoChatRoom *room, const Quotient::CallInviteEven
 
 void CallManager::handleHangup(NeoChatRoom *room, const Quotient::CallHangupEvent *event)
 {
-    qWarning() << "handling hangup start";
     if (event->callId() != m_callId) {
         return;
     }
-    qWarning() << "handling hangup";
-    CallSession::instance().end();
+    m_session->end();
     Q_EMIT callEnded();
 }
 
@@ -163,11 +162,11 @@ void CallManager::acceptCall()
     }
     checkPlugins(m_isVideo);
 
-    CallSession::instance().setTurnServers(m_turnUris);
-    CallSession::instance().acceptOffer(m_incomingSDP);
-    CallSession::instance().acceptICECandidates(m_incomingCandidates);
+    m_session->setTurnServers(m_turnUris);
+    m_session->acceptOffer(m_incomingSDP);
+    m_session->acceptICECandidates(m_incomingCandidates);
     m_incomingCandidates.clear();
-    connect(&CallSession::instance(), &CallSession::answerCreated, this, [=](const QString &sdp, const QVector<Candidate> &candidates) {
+    connect(m_session, &CallSession::answerCreated, this, [=](const QString &sdp, const QVector<Candidate> &candidates) {
         m_room->answerCall(m_callId, sdp);
         QJsonArray cands;
         for (const auto &candidate : candidates) {
@@ -185,7 +184,7 @@ void CallManager::acceptCall()
 
 void CallManager::hangupCall()
 {
-    CallSession::instance().end();
+    m_session->end();
     m_room->hangupCall(m_callId);
     m_isInviting = false;
     m_hasInvite = false;
@@ -195,7 +194,7 @@ void CallManager::hangupCall()
 
 void CallManager::checkPlugins(bool isVideo)
 {
-    CallSession::instance().havePlugins(isVideo);
+    m_session->havePlugins(isVideo);
 }
 
 NeoChatUser *CallManager::remoteUser() const
@@ -215,7 +214,7 @@ bool CallManager::hasInvite() const
 
 CallSession::State CallManager::state() const
 {
-    return CallSession::instance().state();
+    return m_session->state();
 }
 
 int CallManager::lifetime() const
@@ -256,15 +255,15 @@ void CallManager::startCall(NeoChatRoom *room, bool camera)
     Q_EMIT roomChanged();
     Q_EMIT remoteUserChanged();
 
-    CallSession::instance().setTurnServers(m_turnUris);
+    m_session->setTurnServers(m_turnUris);
     generateCallId();
-    CallSession::instance().setSendVideo(camera);
+    m_session->setSendVideo(camera);
 
-    CallSession::instance().startCall();
+    m_session->startCall();
     m_isInviting = true;
     Q_EMIT isInvitingChanged();
 
-    connect(&CallSession::instance(), &CallSession::offerCreated, this, [this](const QString &sdp, const QVector<Candidate> &candidates) {
+    connect(m_session, &CallSession::offerCreated, this, [this](const QString &sdp, const QVector<Candidate> &candidates) {
         m_room->inviteCall(m_callId, 60000, sdp);
         QJsonArray cands;
         for (const auto &candidate : candidates) {
@@ -292,13 +291,13 @@ bool CallManager::isInviting() const
 
 void CallManager::setMuted(bool muted)
 {
-    CallSession::instance().setMuted(muted);
+    m_session->setMuted(muted);
     Q_EMIT mutedChanged();
 }
 
 bool CallManager::muted() const
 {
-    return CallSession::instance().muted();
+    return m_session->muted();
 }
 
 bool CallManager::init()

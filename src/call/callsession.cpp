@@ -16,7 +16,7 @@
 #define GST_USE_UNSTABLE_API
 #include <gst/webrtc/webrtc.h>
 
-#include "../controller.h"
+#include "callmanager.h"
 
 #include "voiplogging.h"
 
@@ -62,7 +62,6 @@ void setLocalDescription(GstPromise *promise, gpointer user_data)
     GstWebRTCSessionDescription *gstsdp = nullptr;
     gst_structure_get(reply, isAnswer ? "answer" : "offer", GST_TYPE_WEBRTC_SESSION_DESCRIPTION, &gstsdp, nullptr);
     gst_promise_unref(promise);
-    qDebug() << instance->m_webrtc;
     g_signal_emit_by_name(instance->m_webrtc, "set-local-description", gstsdp, nullptr);
     gchar *sdp = gst_sdp_message_as_text(gstsdp->sdp);
     instance->m_localSdp = QString(sdp);
@@ -140,18 +139,19 @@ void addLocalICECandidate(GstElement *webrtc G_GNUC_UNUSED, guint mlineIndex, gc
     instance->m_localCandidates += Candidate{candidate, static_cast<int>(mlineIndex), QString()};
 }
 
-void iceConnectionStateChanged(GstElement *webrtc, GParamSpec *pspec G_GNUC_UNUSED, gpointer user_data G_GNUC_UNUSED)
+void iceConnectionStateChanged(GstElement *webrtc, GParamSpec *pspec G_GNUC_UNUSED, gpointer user_data)
 {
+    auto instance = static_cast<CallSession *>(user_data);
     GstWebRTCICEConnectionState newState;
     g_object_get(webrtc, "ice-connection-state", &newState, nullptr);
     switch (newState) {
     case GST_WEBRTC_ICE_CONNECTION_STATE_NEW:
         qCDebug(voip) << "GstWebRTCICEConnectionState -> New";
-        CallSession::instance().setState(CallSession::CONNECTING);
+        instance->setState(CallSession::CONNECTING);
         break;
     case GST_WEBRTC_ICE_CONNECTION_STATE_CHECKING:
         qCDebug(voip) << "GstWebRTCICEConnectionState -> Checking";
-        CallSession::instance().setState(CallSession::CONNECTING);
+        instance->setState(CallSession::CONNECTING);
         break;
     case GST_WEBRTC_ICE_CONNECTION_STATE_CONNECTED:
         qCDebug(voip) << "GstWebRTCICEConnectionState -> Connected";
@@ -161,7 +161,7 @@ void iceConnectionStateChanged(GstElement *webrtc, GParamSpec *pspec G_GNUC_UNUS
         break;
     case GST_WEBRTC_ICE_CONNECTION_STATE_FAILED:
         qCDebug(voip) << "GstWebRTCICEConnectionState -> Failed";
-        CallSession::instance().setState(CallSession::ICEFAILED);
+        instance->setState(CallSession::ICEFAILED);
         break;
     case GST_WEBRTC_ICE_CONNECTION_STATE_DISCONNECTED:
         qCDebug(voip) << "GstWebRTCICEConnectionState -> Disconnected";
@@ -232,7 +232,7 @@ gboolean testPacketLoss(gpointer G_GNUC_UNUSED)
     return false;
 }
 
-GstElement *newVideoSinkChain(GstElement *pipe)
+GstElement *newVideoSinkChain(GstElement *pipe, QQuickItem *quickItem)
 {
     // use compositor for now; acceleration needs investigation
     GstElement *queue = gst_element_factory_make("queue", nullptr);
@@ -241,7 +241,7 @@ GstElement *newVideoSinkChain(GstElement *pipe)
     GstElement *glcolorconvert = gst_element_factory_make("glcolorconvert", nullptr);
     GstElement *qmlglsink = gst_element_factory_make("qmlglsink", nullptr);
     GstElement *glsinkbin = gst_element_factory_make("glsinkbin", nullptr);
-    g_object_set(qmlglsink, "widget", Controller::instance().m_item, nullptr);
+    g_object_set(qmlglsink, "widget", quickItem, nullptr);
     g_object_set(glsinkbin, "sink", qmlglsink, nullptr);
     gst_bin_add_many(GST_BIN(pipe), queue, compositor, glupload, glcolorconvert, glsinkbin, nullptr);
     gst_element_link_many(queue, compositor, glupload, glcolorconvert, glsinkbin, nullptr);
@@ -253,8 +253,9 @@ GstElement *newVideoSinkChain(GstElement *pipe)
     return queue;
 }
 
-void linkNewPad(GstElement *decodebin, GstPad *newpad, GstElement *pipe)
+void linkNewPad(GstElement *decodebin, GstPad *newpad, gpointer user_data)
 {
+    auto instance = static_cast<CallSession *>(user_data);
     GstPad *sinkpad = gst_element_get_static_pad(decodebin, "sink");
     GstCaps *sinkcaps = gst_pad_get_current_caps(sinkpad);
     const GstStructure *structure = gst_caps_get_structure(sinkcaps, 0);
@@ -265,22 +266,21 @@ void linkNewPad(GstElement *decodebin, GstPad *newpad, GstElement *pipe)
     gst_caps_unref(sinkcaps);
     gst_object_unref(sinkpad);
 
-    CallSession *session = &CallSession::instance();
     GstElement *queue = nullptr;
     if (!strcmp(mediaType, "audio")) {
         qCDebug(voip) << "Receiving audio stream";
         //_haveAudioStream = true;
-        queue = newAudioSinkChain(pipe);
+        queue = newAudioSinkChain(instance->m_pipe);
     } else if (!strcmp(mediaType, "video")) {
         qCDebug(voip) << "Receiving video stream";
-        /*if (!session->getVideoItem()) {
+        /*if (!instance->getVideoItem()) {
             g_free(mediaType);
             qDebug() << "Session: video call item not set";
             // TODO: Error handling
             return;
         }*/
         //_haveVideoStream = true;
-        queue = newVideoSinkChain(pipe);
+        queue = newVideoSinkChain(instance->m_pipe, CallManager::instance().m_item);
         // gst_debug_bin_to_dot_file(gst_bin(pipe), gst_debug_graph_show_all, "pipeline");
         _keyFrameRequestData.statsField = QStringLiteral("rtp-inbound-stream-stats_") + QString::number(ssrc);
 
@@ -296,8 +296,8 @@ void linkNewPad(GstElement *decodebin, GstPad *newpad, GstElement *pipe)
             qCWarning(voip) << "Unable to link new pad";
             // TODO: Error handling
         } else {
-            // if (session->calltype() != CallSession::VIDEO || (_haveAudioStream && (_haveVideoStream || session->isRemoteVideoReceiveOnly()))) {
-            session->setState(CallSession::CONNECTED);
+            // if (instance->calltype() != CallSession::VIDEO || (_haveAudioStream && (_haveVideoStream || session->isRemoteVideoReceiveOnly()))) {
+            instance->setState(CallSession::CONNECTED);
             // if (_haveVideoStream) {
             //     _keyFrameRequestData.pipe = pipe;
             //     _keyFrameRequestData.decodebin = decodebin;
@@ -320,17 +320,19 @@ void setWaitForKeyFrame(GstBin *decodebin G_GNUC_UNUSED, GstElement *element, gp
     }
 }
 
-void addDecodeBin(GstElement *webrtc G_GNUC_UNUSED, GstPad *newpad, GstElement *pipe)
+void addDecodeBin(GstElement *webrtc G_GNUC_UNUSED, GstPad *newpad, gpointer user_data)
 {
     if (GST_PAD_DIRECTION(newpad) != GST_PAD_SRC) {
         return;
     }
 
+    auto instance = static_cast<CallSession *>(user_data);
+
     qCDebug(voip) << "Receiving incoming stream";
     GstElement *decodebin = gst_element_factory_make("decodebin", nullptr);
     // Investigate hardware, see nheko source
     g_object_set(decodebin, "force-sw-decoders", TRUE, nullptr);
-    g_signal_connect(decodebin, "pad-added", G_CALLBACK(linkNewPad), pipe);
+    g_signal_connect(decodebin, "pad-added", G_CALLBACK(linkNewPad), instance);
     g_signal_connect(decodebin, "element-added", G_CALLBACK(setWaitForKeyFrame), nullptr);
     gst_bin_add(GST_BIN(pipe), decodebin);
     gst_element_sync_state_with_parent(decodebin);
@@ -497,7 +499,6 @@ bool CallSession::startPipeline()
         return false;
     }
     m_webrtc = gst_bin_get_by_name(GST_BIN(m_pipe), "webrtcbin");
-    qDebug() << "m" << m_webrtc;
     Q_ASSERT(m_webrtc);
     if (false /*TODO: CHECK USE STUN*/) {
         qDebug() << "Session: Setting STUN server:" << STUN_SERVER;
@@ -523,7 +524,7 @@ bool CallSession::startPipeline()
     g_signal_connect(m_webrtc, "notify::ice-connection-state", G_CALLBACK(iceConnectionStateChanged), this);
 
     gst_element_set_state(m_pipe, GST_STATE_READY);
-    g_signal_connect(m_webrtc, "pad-added", G_CALLBACK(addDecodeBin), m_pipe);
+    g_signal_connect(m_webrtc, "pad-added", G_CALLBACK(addDecodeBin), this);
 
     g_signal_connect(m_webrtc, "notify::ice-gathering-state", G_CALLBACK(iceGatheringStateChanged), this);
     gst_object_unref(m_webrtc);
