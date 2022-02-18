@@ -35,7 +35,7 @@ Kirigami.Page {
         GstGLVideoItem {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Component.onCompleted: Controller.item = this
+            Component.onCompleted: CallManager.item = this
             z: 10
             MouseArea {
                 anchors.fill: parent

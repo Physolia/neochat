@@ -87,8 +87,7 @@ const VideoSource *VideoSources::currentDevice() const
             return &videoSource;
         }
     }
-    qCritical() << "WebRTC: unknown camera:" << name;
-    return nullptr;
+    return &DeviceMonitor::instance().videoSources()[0];
 }
 
 void VideoSources::setCurrentIndex(int index)
@@ -124,7 +123,6 @@ QStringList VideoSources::caps(int index) const
     for (const auto &cap : caps) {
         strings += QStringLiteral("%1x%2, %3 FPS").arg(cap.width).arg(cap.height).arg(cap.framerates.back());
     }
-    qDebug() << strings;
     return strings;
 }
 

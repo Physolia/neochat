@@ -9,12 +9,18 @@
 #include <gst/gst.h>
 
 #include "voiplogging.h"
+#include <QDateTime>
 
 CallManager::CallManager()
     : m_session(new CallSession()) // TODO make sure we don't leak these
 {
     init();
-    connect(m_session, &CallSession::stateChanged, this, &CallManager::stateChanged);
+    connect(m_session, &CallSession::stateChanged, this, [this] {
+        Q_EMIT stateChanged();
+        if (state() == CallSession::ICEFAILED) {
+            Q_EMIT callEnded();
+        }
+    });
     connect(&Controller::instance(), &Controller::activeConnectionChanged, this, &CallManager::updateTurnServers);
 }
 
@@ -72,7 +78,9 @@ void CallManager::handleCallEvent(NeoChatRoom *room, const Quotient::RoomEvent *
 
 void CallManager::handleAnswer(NeoChatRoom *room, const Quotient::CallAnswerEvent *event)
 {
-    // TODO guard against accepting answers if the other account is also logged in to this neochat instance
+    if (event->senderId() != room->localUser()->id()) {
+        return;
+    }
     if (event->callId() != m_callId) {
         return;
     }
@@ -94,14 +102,13 @@ void CallManager::handleAnswer(NeoChatRoom *room, const Quotient::CallAnswerEven
 void CallManager::handleCandidates(NeoChatRoom *room, const Quotient::CallCandidatesEvent *event)
 {
     if (event->senderId() == room->localUser()->id()) {
-        qDebug() << "Sent by this user";
         return;
     }
-    if (event->callId() != m_callId) {
-        qDebug() << "Not for this call";
+    if (!m_callId.isEmpty() && event->callId() != m_callId) { // temp: don't accept candidates if there is a callid
+        qDebug() << "candidates not for this call";
         return;
     }
-
+    // m_incomingCandidates.clear();
     if (state() != CallSession::DISCONNECTED) {
         qDebug() << "Not disconnected";
         QVector<Candidate> candidates;
@@ -111,7 +118,8 @@ void CallManager::handleCandidates(NeoChatRoom *room, const Quotient::CallCandid
         m_session->acceptICECandidates(candidates);
     } else {
         qDebug() << "Disconnected, saving for later";
-        // m_incomingCandidates.clear();
+        qWarning() << event->candidates();
+        m_incomingCandidates.clear();
         for (const auto &c : event->candidates()) {
             m_incomingCandidates += Candidate{c.toObject()["candidate"].toString(), c.toObject()["sdpMLineIndex"].toInt(), c.toObject()["sdpMid"].toString()};
         }
@@ -120,6 +128,13 @@ void CallManager::handleCandidates(NeoChatRoom *room, const Quotient::CallCandid
 
 void CallManager::handleInvite(NeoChatRoom *room, const Quotient::CallInviteEvent *event)
 {
+    if (event->originTimestamp() < QDateTime::currentDateTime().addSecs(-60)) {
+        return;
+    }
+    if (event->senderId() == room->localUser()->id()) {
+        qDebug() << "Sent by this user";
+        return;
+    }
     if (m_callId == event->callId()) {
         return;
     }
@@ -148,6 +163,10 @@ void CallManager::handleInvite(NeoChatRoom *room, const Quotient::CallInviteEven
 
 void CallManager::handleHangup(NeoChatRoom *room, const Quotient::CallHangupEvent *event)
 {
+    if (event->senderId() == room->localUser()->id()) {
+        qDebug() << "Sent by this user";
+        return;
+    }
     if (event->callId() != m_callId) {
         return;
     }
@@ -162,11 +181,14 @@ void CallManager::acceptCall()
     }
     checkPlugins(m_isVideo);
 
+    m_session->setSendVideo(true); // TODO change
     m_session->setTurnServers(m_turnUris);
     m_session->acceptOffer(m_incomingSDP);
     m_session->acceptICECandidates(m_incomingCandidates);
     m_incomingCandidates.clear();
     connect(m_session, &CallSession::answerCreated, this, [=](const QString &sdp, const QVector<Candidate> &candidates) {
+        qDebug() << "Sending call candidates";
+        qWarning() << sdp;
         m_room->answerCall(m_callId, sdp);
         QJsonArray cands;
         for (const auto &candidate : candidates) {

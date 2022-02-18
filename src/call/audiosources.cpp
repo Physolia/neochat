@@ -61,8 +61,7 @@ GstDevice *AudioSources::currentDevice() const
             return audioSource.device;
         }
     }
-    qCritical() << "WebRTC: unknown microphone:" << name;
-    return nullptr;
+    return DeviceMonitor::instance().audioSources()[0].device;
 }
 
 void AudioSources::setCurrentIndex(int index) const
