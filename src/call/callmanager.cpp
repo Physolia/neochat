@@ -26,6 +26,7 @@ CallManager::CallManager()
 
 void CallManager::updateTurnServers()
 {
+    disconnect(nullptr, &Connection::turnServersChanged, this, nullptr);
     Controller::instance().activeConnection()->getTurnServers();
     connect(Controller::instance().activeConnection(), &Connection::turnServersChanged, [=](const QJsonObject &servers) {
         auto ttl = servers["ttl"].toInt();
@@ -186,7 +187,7 @@ void CallManager::acceptCall()
     m_session->acceptOffer(m_incomingSDP);
     m_session->acceptICECandidates(m_incomingCandidates);
     m_incomingCandidates.clear();
-    connect(m_session, &CallSession::answerCreated, this, [=](const QString &sdp, const QVector<Candidate> &candidates) {
+    connectSingleShot(m_session, &CallSession::answerCreated, this, [=](const QString &sdp, const QVector<Candidate> &candidates) {
         qDebug() << "Sending call candidates";
         qWarning() << sdp;
         m_room->answerCall(m_callId, sdp);
@@ -285,7 +286,7 @@ void CallManager::startCall(NeoChatRoom *room, bool camera)
     m_isInviting = true;
     Q_EMIT isInvitingChanged();
 
-    connect(m_session, &CallSession::offerCreated, this, [this](const QString &sdp, const QVector<Candidate> &candidates) {
+    connectSingleShot(m_session, &CallSession::offerCreated, this, [this](const QString &sdp, const QVector<Candidate> &candidates) {
         m_room->inviteCall(m_callId, 60000, sdp);
         QJsonArray cands;
         for (const auto &candidate : candidates) {
