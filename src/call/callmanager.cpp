@@ -30,9 +30,10 @@ void CallManager::updateTurnServers()
     Controller::instance().activeConnection()->getTurnServers();
     connect(Controller::instance().activeConnection(), &Connection::turnServersChanged, [=](const QJsonObject &servers) {
         auto ttl = servers["ttl"].toInt();
-        QTimer::singleShot(ttl * 800, this, [=]() {
-            Controller::instance().activeConnection()->getTurnServers();
-        });
+        qDebug() << "TTL" << ttl;
+        //         QTimer::singleShot(ttl * 800, this, [=]() {
+        //             Controller::instance().activeConnection()->getTurnServers();
+        //         });
 
         auto password = servers["password"].toString();
         auto username = servers["username"].toString();
