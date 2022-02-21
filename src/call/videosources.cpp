@@ -87,6 +87,9 @@ const VideoSource *VideoSources::currentDevice() const
             return &videoSource;
         }
     }
+    if (DeviceMonitor::instance().videoSources().length() == 0) {
+        return nullptr;
+    }
     return &DeviceMonitor::instance().videoSources()[0];
 }
 

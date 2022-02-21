@@ -801,7 +801,7 @@ bool CallSession::muted() const
 
 void CallSession::setSendVideo(bool video)
 {
-    m_sendVideo = video;
+    m_sendVideo = video && (VideoSources::instance().currentDevice() != nullptr);
 }
 
 bool CallSession::sendVideo() const
