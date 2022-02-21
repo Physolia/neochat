@@ -49,12 +49,12 @@ Kirigami.ApplicationWindow {
 
         function onHasInviteChanged() {
             if(CallManager.hasInvite) {
-                pageStack.push("qrc:/imports/NeoChat/Page/CallPage.qml")
+                pageStack.pushDialogLayer("qrc:/imports/NeoChat/Page/CallPage.qml")
             }
         }
         function onIsInvitingChanged() {
             if(CallManager.isInviting) {
-                pageStack.push("qrc:/imports/NeoChat/Page/CallPage.qml")
+                pageStack.pushDialogLayer("qrc:/imports/NeoChat/Page/CallPage.qml")
             }
         }
     }

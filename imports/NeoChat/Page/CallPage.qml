@@ -15,13 +15,6 @@ import NeoChat.Component.Call 1.0
 
 Kirigami.Page {
     id: page
-    contextualActions: [
-        Kirigami.Action {
-            text: i18n("Configure input devices")
-            iconName: "settings-configure"
-            onTriggered: ; //TODO
-        }
-    ]
 
     title: CallManager.hasInvite ? i18n("Incoming Call")
             : CallManager.isInviting ? i18n("Calling")
@@ -29,135 +22,98 @@ Kirigami.Page {
             : i18n("Call")
 
     ColumnLayout {
-        anchors.centerIn: parent
         anchors.fill: parent
 
-        GstGLVideoItem {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            Component.onCompleted: CallManager.item = this
-            z: 10
-            MouseArea {
-                anchors.fill: parent
-                drag.target: parent
-            }
-        }
+        ColumnLayout {
+            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
 
-        QQC2.Label {
-            text: CallManager.remoteUser.displayName
-            horizontalAlignment: Text.AlignHCenter
-            Layout.alignment: Text.AlignHCenter
-        }
-        QQC2.Label {
-            text: CallManager.room.displayName
-            horizontalAlignment: Text.AlignHCenter
-            Layout.alignment: Text.AlignHCenter
-        }
+            // GstGLVideoItem {
+            //     Layout.fillWidth: true
+            //     Layout.fillHeight: true
+            //     Component.onCompleted: CallManager.item = this
+            //     z: 10
+            //     MouseArea {
+            //         anchors.fill: parent
+            //         drag.target: parent
+            //     }
+            // }
 
-        // controls
-        RowLayout {
-            //opacity: callStatus === DialerUtils.Active ? 1 : 0
-            Layout.alignment: Qt.AlignHCenter
-            Layout.maximumWidth: Kirigami.Units.gridUnit * 32
-            Layout.minimumHeight: Kirigami.Units.gridUnit * 3.5
-            id: buttonRow
-            spacing: Kirigami.Units.smallSpacing
-            CallPageButton {
-                id: dialerButton
-                Layout.fillHeight: true
-                Layout.fillWidth: true
-                iconSource: "dialog-messages"
-                text: i18n("Go back to the chat")
-                toggledOn: false
-                // TODO onClicked: toggledOn = !toggledOn
+            Kirigami.Avatar {
+                Layout.preferredWidth: Kirigami.Units.iconSizes.huge
+                Layout.preferredHeight: Kirigami.Units.iconSizes.huge
+                Layout.alignment: Qt.AlignHCenter
+
+                name: CallManager.room.displayName
+                source: "image://mxc/" + CallManager.room.avatarMediaId
             }
-            CallPageButton {
-                id: speakerButton
-                Layout.fillHeight: true
+
+            QQC2.Label {
+                text: CallManager.remoteUser.displayName
+
+                horizontalAlignment: Text.AlignHCenter
                 Layout.fillWidth: true
-                iconSource: "audio-speakers-symbolic"
-                text: i18n("Speaker")
-                toggledOn: false
-                onClicked: toggledOn = !toggledOn
-                onToggledOnChanged: {
-                    //DialerUtils.setSpeakerMode(toggledOn);
+            }
+            QQC2.Label {
+                text: CallManager.room.displayName
+
+                horizontalAlignment: Text.AlignHCenter
+                Layout.fillWidth: true
+            }
+
+            Item { implicitHeight: Kirigami.Units.gridUnit * 2 }
+
+            RowLayout {
+                Layout.alignment: Qt.AlignHCenter
+
+                id: buttonRow
+                spacing: Kirigami.Units.gridUnit
+
+                CallPageButton {
+                    text: i18n("Accept")
+                    icon.name: "call-start"
+                    shimmering: true
+                    temprament: CallPageButton.Constructive
+                    visible: CallManager.hasInvite
+
+                    onClicked: CallManager.acceptCall()
                 }
-            }
-            CallPageButton {
-                id: muteButton
-
-                Layout.fillHeight: true
-                Layout.fillWidth: true
-
-                iconSource: toggledOn ? "microphone-sensitivity-muted-symbolic" : "microphone-sensitivity-high-symbolic"
-                text: i18n("Mute")
-                toggledOn: CallManager.muted
-                onClicked: CallManager.muted = !CallManager.muted
-
-                onToggledOnChanged: {
-                    //DialerUtils.setMute(toggledOn)
+                CallPageButton {
+                    text: i18n("Speaker Phone")
+                    icon.name: "audio-speakers-symbolic"
+                    checkable: true
                 }
-            }
-        }
+                CallPageButton {
+                    text: i18n("Mute")
+                    icon.name: checked ? "microphone-sensitivity-muted-symbolic" : "microphone-sensitivity-high-symbolic"
+                    checkable: true
+                    checked: CallManager.muted
 
-        //RowLayout {
-            //visible: CallManager.isInviting || CallManager.state == CallSession.CONNECTED
-            //Layout.alignment: Qt.AlignHCenter
-            //Layout.fillWidth: true
-            //CallPageButton {
-                //text: i18n("Hang up")
-                //Layout.alignment: Qt.AlignHCenter
-                //onClicked: {
-                    //CallManager.hangupCall()
-                //}
-            //}
-        //}
+                    onToggled: CallManager.muted = !CallManager.muted
+                }
+                CallPageButton {
+                    text: i18n("Configure Devices")
+                    icon.name: "settings-configure"
+                }
+                CallPageButton {
+                    visible: CallManager.hasInvite
+                    text: i18n("Deny")
+                    icon.name: "call-stop"
+                    shimmering: true
+                    temprament: CallPageButton.Destructive
 
-        Item {
-            Layout.minimumHeight: Kirigami.Units.gridUnit * 5
-            Layout.fillWidth: true
+                    onClicked: CallManager.hangupCall()
+                }
+                CallPageButton {
+                    visible: CallManager.isInviting || CallManager.state == CallSession.CONNECTED
+                    text: CallManager.isInviting ? i18n("Cancel") : i18n("Hang Up")
+                    icon.name: "call-stop"
+                    shimmering: CallManager.isInviting
+                    temprament: CallPageButton.Destructive
 
-            AnswerSwipe {
-                anchors.fill: parent
-                //STATUS_INCOMING
-                visible: CallManager.hasInvite
-                onAccepted: CallManager.acceptCall()
-                onRejected: CallManager.hangupCall()
-                // TODO CallManager.ignoreCall()
-            }
-
-            // end call button
-            QQC2.AbstractButton {
-                id: endCallButton
-                //STATUS_ACTIVE
-                visible: CallManager.isInviting || CallManager.state == CallSession.CONNECTED
-
-                anchors.centerIn: parent
-                width: Kirigami.Units.gridUnit * 3.5
-                height: Kirigami.Units.gridUnit * 3.5
-
-                onClicked: CallManager.hangupCall()
-
-                background: Rectangle {
-                    anchors.centerIn: parent
-                    height: Kirigami.Units.gridUnit * 3.5
-                    width: height
-                    radius: height / 2
-
-                    color: "red"
-                    opacity: endCallButton.pressed ? 0.5 : 1
-
-                    Kirigami.Icon {
-                        source: "call-stop"
-                        anchors.fill: parent
-                        anchors.margins: Kirigami.Units.largeSpacing
-                        color: "white"
-                        isMask: true
-                    }
+                    onClicked: CallManager.hangupCall()
                 }
             }
         }
-
     }
 
     Timer {
