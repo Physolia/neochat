@@ -734,9 +734,7 @@ void CallSession::acceptICECandidates(const QVector<Candidate> &candidates)
     if (m_state >= State::INITIATED) {
         for (const auto &c : candidates) {
             qCDebug(voip) << "Remote candidate:" << c.candidate << c.sdpMLineIndex;
-            if (!c.candidate.isEmpty()) {
-                g_signal_emit_by_name(m_webrtc, "add-ice-candidate", c.sdpMLineIndex, c.candidate.toLatin1().data());
-            }
+            g_signal_emit_by_name(m_webrtc, "add-ice-candidate", c.sdpMLineIndex, c.candidate.toLatin1().data());
         }
     }
 }

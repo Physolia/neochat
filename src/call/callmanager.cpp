@@ -80,23 +80,29 @@ void CallManager::handleCallEvent(NeoChatRoom *room, const Quotient::RoomEvent *
 
 void CallManager::handleAnswer(NeoChatRoom *room, const Quotient::CallAnswerEvent *event)
 {
-    if (event->senderId() != room->localUser()->id()) {
-        return;
-    }
+    // if this isn't our call, then we don't care
     if (event->callId() != m_callId) {
         return;
     }
-    if (event->senderId() == room->localUser()->id() && event->callId() == m_callId) {
+    // if this is something we sent out...
+    if (event->senderId() == room->localUser()->id()) {
         if (state() == CallSession::DISCONNECTED) {
+            // this is us from another device, so we handled it from elsewhere
+            //
             // TODO: Show the user that the call was answered on another device
             // TODO: Stop ringing
+        } else {
+            // this is the answer we sent out, so we don't need to handle it
         }
         return;
     }
 
-    if (state() != CallSession::DISCONNECTED && event->callId() == m_callId) {
+    // if we're actually calling, accept the answer
+    if (state() != CallSession::DISCONNECTED) {
         m_session->acceptAnswer(event->sdp());
     }
+
+    // either way we aren't inviting someone to a call
     m_isInviting = false;
     Q_EMIT isInvitingChanged();
 }
