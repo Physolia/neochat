@@ -488,6 +488,9 @@ QVariant MessageEventModel::data(const QModelIndex &idx, int role) const
 
             return "message";
         }
+        if (evt.matrixType() == "m.call.invite") {
+            return "call-invite";
+        }
         if (is<const StickerEvent>(evt)) {
             return "sticker";
         }

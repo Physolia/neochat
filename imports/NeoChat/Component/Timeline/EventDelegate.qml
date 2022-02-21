@@ -19,6 +19,11 @@ DelegateChooser {
     }
 
     DelegateChoice {
+        roleValue: "call-invite"
+        delegate: CallInviteDelegate {}
+    }
+
+    DelegateChoice {
         roleValue: "emote"
         delegate: MessageDelegate {
             isEmote: true
