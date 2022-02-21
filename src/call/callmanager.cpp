@@ -127,7 +127,7 @@ void CallManager::handleCandidates(NeoChatRoom *room, const Quotient::CallCandid
     } else {
         qDebug() << "Disconnected, saving for later";
         qWarning() << event->candidates();
-        m_incomingCandidates.clear();
+        // m_incomingCandidates.clear();
         for (const auto &c : event->candidates()) {
             m_incomingCandidates += Candidate{c.toObject()["candidate"].toString(), c.toObject()["sdpMLineIndex"].toInt(), c.toObject()["sdpMid"].toString()};
         }
@@ -191,8 +191,7 @@ void CallManager::acceptCall()
 
     m_session->setSendVideo(true); // TODO change
     m_session->setTurnServers(m_turnUris);
-    m_session->acceptOffer(m_incomingSDP);
-    m_session->acceptICECandidates(m_incomingCandidates);
+    m_session->acceptOffer(m_incomingSDP, m_incomingCandidates);
     m_incomingCandidates.clear();
     connectSingleShot(m_session, &CallSession::answerCreated, this, [=](const QString &sdp, const QVector<Candidate> &candidates) {
         qDebug() << "Sending call candidates";
@@ -216,6 +215,7 @@ void CallManager::hangupCall()
 {
     m_session->end();
     m_room->hangupCall(m_callId);
+    Q_EMIT callEnded();
     m_isInviting = false;
     m_hasInvite = false;
     Q_EMIT isInvitingChanged();

@@ -242,6 +242,7 @@ gboolean testPacketLoss(gpointer G_GNUC_UNUSED)
 
 GstElement *newVideoSinkChain(GstElement *pipe, QQuickItem *quickItem)
 {
+    Q_ASSERT(quickItem);
     qDebug() << "Session: Creating Video Sink Chain";
     // use compositor for now; acceleration needs investigation
     GstElement *queue = gst_element_factory_make("queue", nullptr);
@@ -426,8 +427,10 @@ void CallSession::acceptAnswer(const QString &sdp)
     return;
 }
 
-void CallSession::acceptOffer(const QString &sdp)
+void CallSession::acceptOffer(const QString &sdp, const QVector<Candidate> remoteCandidates)
 {
+    Q_ASSERT(!sdp.isEmpty());
+    Q_ASSERT(!remoteCandidates.isEmpty());
     // qDebug() << "Session: Received offer:" << sdp;
     qDebug() << "Session: Accepting offer";
     if (m_state != CallSession::DISCONNECTED) {
@@ -471,6 +474,8 @@ void CallSession::acceptOffer(const QString &sdp)
         return;
     }
     QThread::msleep(1000); // ?
+
+    acceptICECandidates(remoteCandidates);
 
     GstPromise *promise = gst_promise_new_with_change_func(createAnswer, this, nullptr);
     g_signal_emit_by_name(m_webrtc, "set-remote-description", offer, promise);
@@ -730,12 +735,12 @@ bool CallSession::isOffering() const
 
 void CallSession::acceptICECandidates(const QVector<Candidate> &candidates)
 {
+    Q_ASSERT(!candidates.isEmpty());
+    Q_ASSERT(m_webrtc);
     qDebug() << "Session: Accepting ICE Candidates";
-    if (m_state >= State::INITIATED) {
-        for (const auto &c : candidates) {
-            qCDebug(voip) << "Remote candidate:" << c.candidate << c.sdpMLineIndex;
-            g_signal_emit_by_name(m_webrtc, "add-ice-candidate", c.sdpMLineIndex, c.candidate.toLatin1().data());
-        }
+    for (const auto &c : candidates) {
+        qDebug() << "Remote candidate:" << c.candidate << c.sdpMLineIndex;
+        g_signal_emit_by_name(m_webrtc, "add-ice-candidate", c.sdpMLineIndex, c.candidate.toLatin1().data());
     }
 }
 

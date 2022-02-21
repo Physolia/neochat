@@ -46,7 +46,7 @@ public:
     CallSession();
 
     void startCall();
-    void acceptOffer(const QString &sdp);
+    void acceptOffer(const QString &sdp, const QVector<Candidate> candidates);
     void acceptAnswer(const QString &sdp);
     void acceptICECandidates(const QVector<Candidate> &candidates);
     void end();
