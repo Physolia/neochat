@@ -66,15 +66,15 @@ MessageEventModel::MessageEventModel(QObject *parent)
             return;
         }
         m_currentRoom->getPreviousContent(50);
-        connect(this, &QAbstractListModel::rowsInserted, this, [this]() {
-            if (m_currentRoom->readMarkerEventId().isEmpty()) {
-                return;
-            }
-            const auto it = m_currentRoom->findInTimeline(m_currentRoom->readMarkerEventId());
-            if (it == m_currentRoom->historyEdge()) {
-                m_currentRoom->getPreviousContent(50);
-            }
-        });
+        //         connect(this, &QAbstractListModel::rowsInserted, this, [this]() {
+        //             if (m_currentRoom->readMarkerEventId().isEmpty()) {
+        //                 return;
+        //             }
+        //             const auto it = m_currentRoom->findInTimeline(m_currentRoom->readMarkerEventId());
+        //             if (it == m_currentRoom->historyEdge()) {
+        //                 m_currentRoom->getPreviousContent(50);
+        //             }
+        //         });
     });
     connect(static_cast<QGuiApplication *>(QGuiApplication::instance()), &QGuiApplication::paletteChanged, this, [this] {
         Q_EMIT dataChanged(index(0, 0), index(rowCount() - 1, 0), {AuthorRole, ReplyRole});
