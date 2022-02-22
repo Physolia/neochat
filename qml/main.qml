@@ -47,13 +47,8 @@ Kirigami.ApplicationWindow {
     Connections {
         target: CallManager
 
-        function onHasInviteChanged() {
-            if(CallManager.hasInvite) {
-                pageStack.pushDialogLayer("qrc:/imports/NeoChat/Page/CallPage.qml")
-            }
-        }
-        function onIsInvitingChanged() {
-            if(CallManager.isInviting) {
+        function onGlobalStateChanged() {
+            if(CallManager.globalState == CallManager.OUTGOING || CallManager.globalState == CallManager.INCOMING) {
                 pageStack.pushDialogLayer("qrc:/imports/NeoChat/Page/CallPage.qml")
             }
         }

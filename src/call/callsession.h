@@ -43,25 +43,26 @@ public:
     };
     Q_ENUM(State);
 
-    CallSession();
+    Q_PROPERTY(CallSession::State state READ state NOTIFY stateChanged)
+    Q_PROPERTY(bool isSendingVideo READ isSendingVideo NOTIFY isSendingVideoChanged)
+    Q_PROPERTY(bool isReceivingVideo READ isReceivingVideo NOTIFY isReceivingVideoChanged)
+    Q_PROPERTY(bool muted READ muted WRITE setMuted NOTIFY mutedChanged)
 
-    void startCall();
-    void acceptOffer(const QString &sdp, const QVector<Candidate> candidates);
-    void acceptAnswer(const QString &sdp);
-    void acceptICECandidates(const QVector<Candidate> &candidates);
+    static CallSession *startCall(bool sendVideo, const QStringList &turnUris, QObject *parent = nullptr);
+    static CallSession *
+    acceptCall(bool sendVideo, const QString &sdp, const QVector<Candidate> &candidates, const QStringList &turnUris, QObject *parent = nullptr);
+
+    void acceptAnswer(const QString &sdp, const QVector<Candidate> &candidates);
+
     void end();
 
     void setTurnServers(QStringList servers);
     QQuickItem *getVideoItem() const;
 
-    bool isRemoteVideoReceiveOnly() const;
-    bool isOffering() const;
     bool havePlugins(bool video) const;
 
-    State state() const;
-
-    void setState(State state);
-    GstElement *m_webrtc = nullptr;
+    CallSession::State state() const;
+    void setState(CallSession::State state);
 
     QVector<Candidate> m_localCandidates;
     bool m_haveAudioStream = false;
@@ -72,26 +73,40 @@ public:
     bool muted() const;
     GstElement *m_pipe;
 
-    void setSendVideo(bool video);
-    bool sendVideo() const;
+    void setIsSendingVideo(bool video);
+    bool isSendingVideo() const;
+
+    void setIsReceivingVideo(bool isReceivingVideo);
+    bool isReceivingVideo() const;
+
+    GstElement *m_webrtc = nullptr;
+    bool m_isOffering = false;
 
 Q_SIGNALS:
     void stateChanged();
     void offerCreated(const QString &sdp, const QVector<Candidate> &candidates);
     void answerCreated(const QString &sdp, const QVector<Candidate> &candidates);
 
+    void isSendingVideoChanged();
+    void isReceivingVideoChanged();
+
+    void mutedChanged();
+
 private:
-    State m_state = DISCONNECTED;
-    bool m_isRemoteVideoReceiveOnly;
-    bool m_isRemoteVideoSendOnly;
-    bool m_isOffering;
-    QStringList m_turnServers;
+    void acceptOffer(bool sendVideo, const QString &sdp, const QVector<Candidate> remoteCandidates);
+    void createCall(bool sendVideo);
+
+    void acceptCandidates(const QVector<Candidate> &candidates);
+
+    CallSession::State m_state = CallSession::DISCONNECTED;
     QQuickItem *m_videoItem;
     unsigned int m_busWatchId = 0;
-    bool m_sendVideo = false;
+    bool m_isSendingVideo = false;
+    bool m_isReceivingVideo = false;
+    QStringList m_turnServers;
 
-    bool startPipeline();
-    bool createPipeline();
-    void clear();
+    bool startPipeline(bool sendVideo);
+    bool createPipeline(bool sendVideo);
     bool addVideoPipeline();
+    CallSession(QObject *parent = nullptr);
 };

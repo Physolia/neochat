@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2020-2021 Nheko Authors
-// SPDX-FileCopyrightText: 2021 Tobias Fella <fella@posteo.de>
+// SPDX-FileCopyrightText: 2021-2022 Tobias Fella <fella@posteo.de>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "callmanager.h"
@@ -11,51 +11,46 @@
 #include "voiplogging.h"
 #include <QDateTime>
 
+#include <qcoro/qcorosignal.h>
+
 CallManager::CallManager()
-    : m_session(new CallSession()) // TODO make sure we don't leak these
 {
     init();
-    connect(m_session, &CallSession::stateChanged, this, [this] {
-        Q_EMIT stateChanged();
-        if (state() == CallSession::ICEFAILED) {
-            Q_EMIT callEnded();
-        }
+    connect(&Controller::instance(), &Controller::activeConnectionChanged, this, [this] {
+        updateTurnServers();
     });
-    connect(&Controller::instance(), &Controller::activeConnectionChanged, this, &CallManager::updateTurnServers);
 }
 
-void CallManager::updateTurnServers()
+QCoro::Task<void> CallManager::updateTurnServers()
 {
-    disconnect(nullptr, &Connection::turnServersChanged, this, nullptr);
+    if (m_cachedTurnUrisValidUntil < QDateTime::currentDateTime()) {
+        co_return;
+    }
     Controller::instance().activeConnection()->getTurnServers();
-    connect(Controller::instance().activeConnection(), &Connection::turnServersChanged, [=](const QJsonObject &servers) {
-        auto ttl = servers["ttl"].toInt();
-        qDebug() << "TTL" << ttl;
-        //         QTimer::singleShot(ttl * 800, this, [=]() {
-        //             Controller::instance().activeConnection()->getTurnServers();
-        //         });
 
-        auto password = servers["password"].toString();
-        auto username = servers["username"].toString();
-        auto uris = servers["uris"].toArray();
+    auto servers = co_await qCoro(Controller::instance().activeConnection(), &Connection::turnServersChanged);
+    m_cachedTurnUrisValidUntil = QDateTime::currentDateTime().addSecs(servers["ttl"].toInt());
 
-        m_turnUris.clear();
-        for (const auto &u : uris) {
-            QString uri = u.toString();
-            auto c = uri.indexOf(':');
-            if (c == -1) {
-                qDebug() << "Invalid TURN URI:" << uri;
-                continue;
-            }
-            QString scheme = uri.left(c);
-            if (scheme != "turn" && scheme != "turns") {
-                qDebug() << "Invalid TURN scheme:" << scheme;
-                continue;
-            }
-            m_turnUris += scheme + QStringLiteral("://") + QUrl::toPercentEncoding(username) + QStringLiteral(":") + QUrl::toPercentEncoding(password)
-                + QStringLiteral("@") + uri.mid(c + 1);
+    auto password = servers["password"].toString();
+    auto username = servers["username"].toString();
+    auto uris = servers["uris"].toArray();
+
+    m_cachedTurnUris.clear();
+    for (const auto &u : uris) {
+        QString uri = u.toString();
+        auto c = uri.indexOf(':');
+        if (c == -1) {
+            qDebug() << "Invalid TURN URI:" << uri;
+            continue;
         }
-    });
+        QString scheme = uri.left(c);
+        if (scheme != "turn" && scheme != "turns") {
+            qDebug() << "Invalid TURN scheme:" << scheme;
+            continue;
+        }
+        m_cachedTurnUris += scheme + QStringLiteral("://") + QUrl::toPercentEncoding(username) + QStringLiteral(":") + QUrl::toPercentEncoding(password)
+            + QStringLiteral("@") + uri.mid(c + 1);
+    }
 }
 
 QString CallManager::callId() const
@@ -73,13 +68,15 @@ void CallManager::handleCallEvent(NeoChatRoom *room, const Quotient::RoomEvent *
         handleCandidates(room, candidatesEvent);
     } else if (const auto &answerEvent = eventCast<const CallAnswerEvent>(event)) {
         handleAnswer(room, answerEvent);
-    } else {
-        Q_ASSERT(false);
     }
 }
 
 void CallManager::handleAnswer(NeoChatRoom *room, const Quotient::CallAnswerEvent *event)
 {
+    if (globalState() != OUTGOING) {
+        qCDebug(voip) << "Not inviting; irrelevant answer";
+        return;
+    }
     // if this isn't our call, then we don't care
     if (event->callId() != m_callId) {
         return;
@@ -99,12 +96,12 @@ void CallManager::handleAnswer(NeoChatRoom *room, const Quotient::CallAnswerEven
 
     // if we're actually calling, accept the answer
     if (state() != CallSession::DISCONNECTED) {
-        m_session->acceptAnswer(event->sdp());
+        // TODO wait until candidates are here
+        m_session->acceptAnswer(event->sdp(), m_incomingCandidates);
+        return;
     }
-
-    // either way we aren't inviting someone to a call
-    m_isInviting = false;
-    Q_EMIT isInvitingChanged();
+    m_incomingCandidates.clear();
+    setGlobalState(ACTIVE);
 }
 
 void CallManager::handleCandidates(NeoChatRoom *room, const Quotient::CallCandidatesEvent *event)
@@ -112,41 +109,33 @@ void CallManager::handleCandidates(NeoChatRoom *room, const Quotient::CallCandid
     if (event->senderId() == room->localUser()->id()) {
         return;
     }
-    if (!m_callId.isEmpty() && event->callId() != m_callId) { // temp: don't accept candidates if there is a callid
-        qDebug() << "candidates not for this call";
+    if (!m_callId.isEmpty() && event->callId() != m_callId) { // temp: don't accept candidates if there is a callId
+        qCDebug(voip) << "Candidates not for this call; Skipping";
         return;
     }
-    // m_incomingCandidates.clear();
-    if (state() != CallSession::DISCONNECTED) {
-        qDebug() << "Not disconnected";
-        QVector<Candidate> candidates;
-        for (const auto &c : event->candidates()) {
-            candidates += Candidate{c.toObject()["candidate"].toString(), c.toObject()["sdpMLineIndex"].toInt(), c.toObject()["sdpMid"].toString()};
-        }
-        m_session->acceptICECandidates(candidates);
-    } else {
-        qDebug() << "Disconnected, saving for later";
-        qWarning() << event->candidates();
-        // m_incomingCandidates.clear();
-        for (const auto &c : event->candidates()) {
-            m_incomingCandidates += Candidate{c.toObject()["candidate"].toString(), c.toObject()["sdpMLineIndex"].toInt(), c.toObject()["sdpMid"].toString()};
-        }
+    for (const auto &candidate : event->candidates()) {
+        m_incomingCandidates +=
+            Candidate{candidate.toObject()["candidate"].toString(), candidate.toObject()["sdpMLineIndex"].toInt(), candidate.toObject()["sdpMid"].toString()};
     }
 }
 
 void CallManager::handleInvite(NeoChatRoom *room, const Quotient::CallInviteEvent *event)
 {
+    if (globalState() != IDLE) {
+        // TODO handle glare
+        qCDebug(voip) << "Already in a call";
+        return;
+    }
+    setGlobalState(INCOMING);
+
     if (event->originTimestamp() < QDateTime::currentDateTime().addSecs(-60)) {
         return;
     }
     if (event->senderId() == room->localUser()->id()) {
-        qDebug() << "Sent by this user";
+        qCDebug(voip) << "Sent by this user";
         return;
     }
     if (m_callId == event->callId()) {
-        return;
-    }
-    if (state() != CallSession::DISCONNECTED) {
         return;
     }
     m_incomingSDP = event->sdp();
@@ -171,14 +160,19 @@ void CallManager::handleInvite(NeoChatRoom *room, const Quotient::CallInviteEven
 
 void CallManager::handleHangup(NeoChatRoom *room, const Quotient::CallHangupEvent *event)
 {
+    if (globalState() == IDLE) {
+        qCDebug(voip) << "No call; irrelevant hangup";
+        return;
+    }
+
     if (event->senderId() == room->localUser()->id()) {
-        qDebug() << "Sent by this user";
         return;
     }
     if (event->callId() != m_callId) {
         return;
     }
     m_session->end();
+    setGlobalState(IDLE);
     Q_EMIT callEnded();
 }
 
@@ -187,25 +181,27 @@ void CallManager::acceptCall()
     if (!hasInvite()) {
         return;
     }
-    checkPlugins(m_isVideo);
 
-    m_session->setSendVideo(true); // TODO change
-    m_session->setTurnServers(m_turnUris);
-    m_session->acceptOffer(m_incomingSDP, m_incomingCandidates);
+    // TODO check plugins
+    // TODO wait until candidates are here
+
+    updateTurnServers();
+
+    // TODO make video configurable
+    //  change true to false if you don't have a camera
+    m_session = CallSession::acceptCall(true, m_incomingSDP, m_incomingCandidates, m_cachedTurnUris, this);
+    connect(m_session, &CallSession::stateChanged, this, [this] {
+        Q_EMIT stateChanged();
+        if (state() == CallSession::ICEFAILED) {
+            Q_EMIT callEnded();
+        }
+    }); // TODO refactor away?
     m_incomingCandidates.clear();
     connectSingleShot(m_session, &CallSession::answerCreated, this, [=](const QString &sdp, const QVector<Candidate> &candidates) {
-        qDebug() << "Sending call candidates";
-        qWarning() << sdp;
         m_room->answerCall(m_callId, sdp);
-        QJsonArray cands;
-        for (const auto &candidate : candidates) {
-            QJsonObject c;
-            c["candidate"] = candidate.candidate;
-            c["sdpMid"] = candidate.sdpMid;
-            c["sdpMLineIndex"] = candidate.sdpMLineIndex;
-            cands += c;
-        }
-        m_room->sendCallCandidates(m_callId, cands);
+        qCDebug(voip) << "Sending Answer";
+        m_room->sendCallCandidates(m_callId, candidatesToJson(candidates));
+        qCDebug(voip) << "Sending Candidates";
     });
     m_hasInvite = false;
     Q_EMIT hasInviteChanged();
@@ -213,8 +209,11 @@ void CallManager::acceptCall()
 
 void CallManager::hangupCall()
 {
-    m_session->end();
+    if (m_session) {
+        m_session->end();
+    }
     m_room->hangupCall(m_callId);
+    setGlobalState(IDLE);
     Q_EMIT callEnded();
     m_isInviting = false;
     m_hasInvite = false;
@@ -244,6 +243,9 @@ bool CallManager::hasInvite() const
 
 CallSession::State CallManager::state() const
 {
+    if (!m_session) {
+        return CallSession::DISCONNECTED;
+    }
     return m_session->state();
 }
 
@@ -266,51 +268,51 @@ void CallManager::ignoreCall()
     Q_EMIT remoteUserChanged();
 }
 
-void CallManager::startCall(NeoChatRoom *room, bool camera)
+void CallManager::startCall(NeoChatRoom *room, bool sendVideo)
 {
-    if (state() != CallSession::DISCONNECTED) {
+    if (m_session) {
+        // Don't start calls if there already is one
         return;
     }
     if (room->users().size() != 2) {
-        qCWarning(voip) << "This room doesn't have exactly two members; aborting mission.";
+        // Don't start calls if the room doesn't have exactly two members
         return;
     }
-    checkPlugins(false); // TODO: video
 
-    m_lifetime = 60000;
-    Q_EMIT lifetimeChanged();
+    // TODO check plugins?
 
-    m_room = room;
-    m_remoteUser = dynamic_cast<NeoChatUser *>(room->users()[0]->id() == room->localUser()->id() ? room->users()[1] : room->users()[0]);
-    Q_EMIT roomChanged();
-    Q_EMIT remoteUserChanged();
+    setLifetime(60000);
+    setRoom(room);
+    setRemoteUser(otherUser(room));
 
-    m_session->setTurnServers(m_turnUris);
-    generateCallId();
-    m_session->setSendVideo(camera);
+    updateTurnServers();
 
-    m_session->startCall();
-    m_isInviting = true;
-    Q_EMIT isInvitingChanged();
+    setCallId(generateCallId());
+
+    m_session = CallSession::startCall(sendVideo, m_cachedTurnUris, this);
+    connect(m_session, &CallSession::stateChanged, this, [this] {
+        Q_EMIT stateChanged();
+        if (state() == CallSession::ICEFAILED) {
+            Q_EMIT callEnded();
+        }
+    }); // TODO refactor away?
 
     connectSingleShot(m_session, &CallSession::offerCreated, this, [this](const QString &sdp, const QVector<Candidate> &candidates) {
-        m_room->inviteCall(m_callId, 60000, sdp);
-        QJsonArray cands;
-        for (const auto &candidate : candidates) {
-            QJsonObject c;
-            c["candidate"] = candidate.candidate;
-            c["sdpMid"] = candidate.sdpMid;
-            c["sdpMLineIndex"] = candidate.sdpMLineIndex;
-            cands += c;
-        }
-        m_room->sendCallCandidates(m_callId, cands);
-        qDebug() << "CallManager: call candidates sent.";
+        m_room->inviteCall(callId(), lifetime(), sdp);
+        qCDebug(voip) << "Sending Invite";
+        m_room->sendCallCandidates(callId(), candidatesToJson(candidates));
+        qCDebug(voip) << "Sending Candidates";
     });
 }
 
-void CallManager::generateCallId()
+QString CallManager::generateCallId()
 {
-    m_callId = QDateTime::currentDateTime().toString("yyyyMMddhhmmsszzz");
+    return QDateTime::currentDateTime().toString("yyyyMMddhhmmsszzz");
+}
+
+void CallManager::setCallId(const QString &callId)
+{
+    m_callId = callId;
     Q_EMIT callIdChanged();
 }
 
@@ -321,35 +323,38 @@ bool CallManager::isInviting() const
 
 void CallManager::setMuted(bool muted)
 {
+    if (!m_session) {
+        return;
+    }
     m_session->setMuted(muted);
     Q_EMIT mutedChanged();
 }
 
 bool CallManager::muted() const
 {
+    if (!m_session) {
+        return false;
+    }
     return m_session->muted();
 }
 
 bool CallManager::init()
 {
-    if (m_initialised) {
-        return true;
-    }
-
+    qRegisterMetaType<Candidate>();
+    qRegisterMetaType<QVector<Candidate>>();
     GError *error = nullptr;
     if (!gst_init_check(nullptr, nullptr, &error)) {
-        QString strError("Failed to initialise GStreamer: ");
+        QString strError;
         if (error) {
             strError += error->message;
             g_error_free(error);
         }
-        qCCritical(voip) << strError;
+        qCCritical(voip) << "Failed to initialize GStreamer:" << strError;
         return false;
     }
 
-    m_initialised = true;
     gchar *version = gst_version_string();
-    qCDebug(voip) << "Initialised" << version;
+    qCDebug(voip) << "Initialised GStreamer: Version" << version;
     g_free(version);
 
     // Required to register the qml types
@@ -357,4 +362,50 @@ bool CallManager::init()
     Q_ASSERT(_sink);
     gst_object_unref(_sink);
     return true;
+}
+
+void CallManager::setLifetime(int lifetime)
+{
+    m_lifetime = lifetime;
+    Q_EMIT lifetimeChanged();
+}
+
+void CallManager::setRoom(NeoChatRoom *room)
+{
+    m_room = room;
+    Q_EMIT roomChanged();
+}
+
+void CallManager::setRemoteUser(NeoChatUser *user)
+{
+    m_remoteUser = user;
+    Q_EMIT roomChanged();
+}
+
+NeoChatUser *CallManager::otherUser(NeoChatRoom *room)
+{
+    return dynamic_cast<NeoChatUser *>(room->users()[0]->id() == room->localUser()->id() ? room->users()[1] : room->users()[0]);
+}
+
+QJsonArray CallManager::candidatesToJson(const QVector<Candidate> &candidates) const
+{
+    QJsonArray candidatesJson;
+    for (const auto &candidate : candidates) {
+        candidatesJson += QJsonObject{{"candidate", candidate.candidate}, {"sdpMid", candidate.sdpMid}, {"sdpMLineIndex", candidate.sdpMLineIndex}};
+    }
+    return candidatesJson;
+}
+
+void CallManager::setGlobalState(GlobalState globalState)
+{
+    if (m_globalState == globalState) {
+        return;
+    }
+    m_globalState = globalState;
+    Q_EMIT globalStateChanged();
+}
+
+CallManager::GlobalState CallManager::globalState() const
+{
+    return m_globalState;
 }
