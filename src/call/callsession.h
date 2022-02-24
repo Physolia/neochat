@@ -71,7 +71,7 @@ public:
 
     void setMuted(bool muted);
     bool muted() const;
-    GstElement *m_pipe;
+    GstElement *m_pipe = nullptr;
 
     void setIsSendingVideo(bool video);
     bool isSendingVideo() const;

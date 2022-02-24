@@ -23,7 +23,8 @@ CallManager::CallManager()
 
 QCoro::Task<void> CallManager::updateTurnServers()
 {
-    if (m_cachedTurnUrisValidUntil < QDateTime::currentDateTime()) {
+    qDebug() << m_cachedTurnUrisValidUntil << QDateTime::currentDateTime();
+    if (m_cachedTurnUrisValidUntil > QDateTime::currentDateTime()) {
         co_return;
     }
     Controller::instance().activeConnection()->getTurnServers();
@@ -126,7 +127,6 @@ void CallManager::handleInvite(NeoChatRoom *room, const Quotient::CallInviteEven
         qCDebug(voip) << "Already in a call";
         return;
     }
-    setGlobalState(INCOMING);
 
     if (event->originTimestamp() < QDateTime::currentDateTime().addSecs(-60)) {
         return;
@@ -135,9 +135,8 @@ void CallManager::handleInvite(NeoChatRoom *room, const Quotient::CallInviteEven
         qCDebug(voip) << "Sent by this user";
         return;
     }
-    if (m_callId == event->callId()) {
-        return;
-    }
+    setGlobalState(INCOMING);
+
     m_incomingSDP = event->sdp();
     m_remoteUser = dynamic_cast<NeoChatUser *>(room->user(event->senderId()));
     Q_EMIT remoteUserChanged();
@@ -171,7 +170,9 @@ void CallManager::handleHangup(NeoChatRoom *room, const Quotient::CallHangupEven
     if (event->callId() != m_callId) {
         return;
     }
-    m_session->end();
+    if (m_session) {
+        m_session->end();
+    }
     setGlobalState(IDLE);
     Q_EMIT callEnded();
 }
@@ -202,6 +203,7 @@ void CallManager::acceptCall()
         qCDebug(voip) << "Sending Answer";
         m_room->sendCallCandidates(m_callId, candidatesToJson(candidates));
         qCDebug(voip) << "Sending Candidates";
+        setGlobalState(ACTIVE);
     });
     m_hasInvite = false;
     Q_EMIT hasInviteChanged();

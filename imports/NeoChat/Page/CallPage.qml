@@ -27,16 +27,16 @@ Kirigami.Page {
         ColumnLayout {
             Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
 
-            // GstGLVideoItem {
-            //     Layout.fillWidth: true
-            //     Layout.fillHeight: true
-            //     Component.onCompleted: CallManager.item = this
-            //     z: 10
-            //     MouseArea {
-            //         anchors.fill: parent
-            //         drag.target: parent
-            //     }
-            // }
+            GstGLVideoItem {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Component.onCompleted: CallManager.item = this
+                z: 10
+                MouseArea {
+                    anchors.fill: parent
+                    drag.target: parent
+                }
+            }
 
             Kirigami.Avatar {
                 Layout.preferredWidth: Kirigami.Units.iconSizes.huge
@@ -73,18 +73,23 @@ Kirigami.Page {
                     icon.name: "call-start"
                     shimmering: true
                     temprament: CallPageButton.Constructive
-                    visible: CallManager.hasInvite
+                    visible: CallManager.globalState === CallManager.INCOMING
 
                     onClicked: CallManager.acceptCall()
                 }
                 CallPageButton {
-                    text: i18n("Speaker Phone")
-                    icon.name: "audio-speakers-symbolic"
+                    text: checked ? i18n("Enable Camera") : i18n("Disable Camera")
+                    icon.name: checked ? "camera-off" : "camera-on"
                     checkable: true
                 }
                 CallPageButton {
-                    text: i18n("Mute")
-                    icon.name: checked ? "microphone-sensitivity-muted-symbolic" : "microphone-sensitivity-high-symbolic"
+                    text: checked ? i18n("Unmute Speaker") : i18n("Mute Speaker")
+                    icon.name: checked ? "audio-volume-muted" : "audio-speakers-symbolic"
+                    checkable: true
+                }
+                CallPageButton {
+                    text: checked ? i18n("Unmute Microphone") : i18n("Mute Microphone")
+                    icon.name: checked ? "microphone-sensitivity-muted" : "microphone-sensitivity-high"
                     checkable: true
                     checked: CallManager.muted
 
@@ -93,9 +98,11 @@ Kirigami.Page {
                 CallPageButton {
                     text: i18n("Configure Devices")
                     icon.name: "settings-configure"
+                    onClicked: callConfigurationSheet.open()
                 }
                 CallPageButton {
-                    visible: CallManager.hasInvite
+                    id: denyButton
+                    visible: CallManager.globalState === CallManager.INCOMING
                     text: i18n("Deny")
                     icon.name: "call-stop"
                     shimmering: true
@@ -104,7 +111,7 @@ Kirigami.Page {
                     onClicked: CallManager.hangupCall()
                 }
                 CallPageButton {
-                    visible: CallManager.isInviting || CallManager.state == CallSession.CONNECTED
+                    visible: !denyButton.visible
                     text: CallManager.isInviting ? i18n("Cancel") : i18n("Hang Up")
                     icon.name: "call-stop"
                     shimmering: CallManager.isInviting
@@ -145,5 +152,9 @@ Kirigami.Page {
         if(CallManager.hasInvite || CallManager.isInviting) {
             lifeTimer.start()
         }
+    }
+
+    CallConfigurationSheet {
+        id: callConfigurationSheet
     }
 }

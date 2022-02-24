@@ -546,7 +546,6 @@ bool CallSession::startPipeline(bool sendVideo)
 void CallSession::end()
 {
     qDebug() << "Ending Call";
-    _keyFrameRequestData = KeyFrameRequestData{};
     if (m_pipe) {
         gst_element_set_state(m_pipe, GST_STATE_NULL);
         gst_object_unref(m_pipe);

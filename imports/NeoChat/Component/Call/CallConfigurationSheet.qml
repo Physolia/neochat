@@ -20,41 +20,27 @@ Kirigami.OverlaySheet {
             Kirigami.FormData.label: i18n("Audio Source:")
             model: AudioSources
             currentIndex: AudioSources.currentIndex
-        }
-        QQC2.CheckBox {
-            id: sendVideo
-            text: i18n("Send camera")
+            onCurrentIndexChanged: AudioSources.currentIndex = currentIndex
         }
         QQC2.ComboBox {
             id: videoSource
             Kirigami.FormData.label: i18n("Video Source:")
             model: VideoSources
-            enabled: sendVideo.checked
             currentIndex: VideoSources.currentIndex
-            onCountChanged: caps.model = VideoSources.caps(videoSource.currentIndex)
-            onCurrentIndexChanged: caps.model = VideoSources.caps(videoSource.currentIndex)
+            onCurrentIndexChanged: VideoSources.currentIndex = currentIndex
         }
-        QQC2.ComboBox {
-            id: caps
-            onModelChanged: currentIndex = VideoSources.capsIndex
-            enabled: sendVideo.checked
-            Kirigami.FormData.label: i18n("Framerate:")
-        }
+        //QQC2.ComboBox {
+            //id: caps
+            //onModelChanged: currentIndex = VideoSources.capsIndex
+            //enabled: sendVideo.checked
+            //Kirigami.FormData.label: i18n("Framerate:")
+        //}
     }
     footer: Kirigami.ActionToolBar {
         actions: [
             Kirigami.Action {
-                text: i18n("Call")
-                icon.name: "call-start"
-                onTriggered: {
-                    if(sendVideo.checked) {
-                        VideoSources.currentIndex = videoSource.currentIndex
-                        VideoSources.capsIndex = caps.currentIndex
-                    }
-                    AudioSources.currentIndex = audioSource.currentIndex
-                    CallManager.startCall(sheet.room, sendVideo.checked)
-                    sheet.close()
-                }
+                text: i18n("Close")
+                icon.name: "window-close-symbolic"
             }
         ]
     }

@@ -96,7 +96,7 @@ private:
     void checkPlugins(bool isVideo);
 
     QStringList m_cachedTurnUris;
-    QDateTime m_cachedTurnUrisValidUntil;
+    QDateTime m_cachedTurnUrisValidUntil = QDateTime::fromSecsSinceEpoch(0);
 
     NeoChatUser *m_remoteUser = nullptr;
     NeoChatRoom *m_room = nullptr;
