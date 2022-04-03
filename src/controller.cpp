@@ -231,6 +231,18 @@ void Controller::addConnection(Connection *c)
             Q_EMIT userConsentRequired(job->errorUrl());
         }
     });
+    //     connect(c, &Connection::incomingKeyVerificationRequest, this, [c, this](KeyVerificationSession *session){
+    //         Q_EMIT keyVerificationRequest(timeLeft, c, requestEvent.transactionId(), requestEvent.fromDevice());
+    //     });
+    //     connect(c, &Connection::incomingKeyVerificationStart, this, [&](const KeyVerificationStartEvent& startEvent){
+    //         Q_EMIT keyVerificationStart();
+    //     });
+    //     connect(c, &Connection::incomingKeyVerificationAccept, this, [&](const KeyVerificationAcceptEvent& acceptEvent) {
+    //         Q_EMIT keyVerificationAccept(acceptEvent.commitment());
+    //     });
+    //     connect(c, &Connection::incomingKeyVerificationKey, this, [&](const QByteArray& sas) {
+    //         Q_EMIT keyVerificationKey(QString(sas.toHex()));
+    //     });
 
     setBusy(true);
 

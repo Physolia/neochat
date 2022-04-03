@@ -73,6 +73,7 @@
 #include "userdirectorylistmodel.h"
 #include "userlistmodel.h"
 #include "webshortcutmodel.h"
+#include <keyverificationsession.h>
 #include <room.h>
 #ifdef HAVE_COLORSCHEME
 #include "colorschemer.h"
@@ -213,6 +214,7 @@ int main(int argc, char *argv[])
     qmlRegisterUncreatableType<RoomMessageEvent>("org.kde.neochat", 1, 0, "RoomMessageEvent", "ENUM");
     qmlRegisterUncreatableType<NeoChatRoomType>("org.kde.neochat", 1, 0, "NeoChatRoomType", "ENUM");
     qmlRegisterUncreatableType<UserType>("org.kde.neochat", 1, 0, "UserType", "ENUM");
+    qmlRegisterUncreatableType<KeyVerificationSession>("org.kde.neochat", 1, 0, "KeyVerificationSession", {});
 
     qRegisterMetaType<User *>("User*");
     qRegisterMetaType<User *>("const User*");
@@ -224,6 +226,7 @@ int main(int argc, char *argv[])
     qRegisterMetaType<NeoChatUser *>("NeoChatUser*");
     qRegisterMetaType<GetRoomEventsJob *>("GetRoomEventsJob*");
     qRegisterMetaType<QMimeType>("QMimeType");
+    qRegisterMetaType<KeyVerificationSession *>("KeyVerificationSession*");
 
 #ifdef HAVE_WINDOWSYSTEM
     qmlRegisterSingletonType<KWindowSystem>("org.kde.kwindowsystem.private", 1, 0, "KWindowSystem", [](QQmlEngine *, QJSEngine *) -> QObject * {

@@ -39,6 +39,13 @@ Kirigami.ScrollablePage {
             }
             actions: [
                 Kirigami.Action {
+                    text: i18n("Verify device")
+                    iconName: "security-low-symbolic"
+                    onTriggered: {
+                        devices.connection.startKeyVerificationSession(model.id)
+                    }
+                },
+                Kirigami.Action {
                     text: i18n("Edit device name")
                     iconName: "document-edit"
                     onTriggered: {
