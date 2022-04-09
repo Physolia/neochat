@@ -3,7 +3,7 @@
 
 #include <qtestcase.h>
 #include <quotient_common.h>
-#define protected public
+#define protected public // please don't hate me
 #include "neochatroom.h"
 #undef protected
 #include "syncdata.h"
@@ -20,7 +20,8 @@ private:
 
 private Q_SLOTS:
     void initTestCase();
-    void testSubtitleTest();
+    void subtitleTextTest();
+    void eventTest();
 };
 
 void NeoChatRoomTest::initTestCase()
@@ -114,18 +115,18 @@ void NeoChatRoomTest::initTestCase()
       },
       {
         "content": {
-          "body": "This is an example text message",
+          "body": "This is an **example** text message",
           "format": "org.matrix.custom.html",
           "formatted_body": "<b>This is an example text message</b>",
           "msgtype": "m.text"
         },
         "event_id": "$143273582443PhrSn:example.org",
-        "origin_server_ts": 1432735824653,
+        "origin_server_ts": 1432735824654,
         "room_id": "!jEsUZKDJdhlrceRyVU:example.org",
         "sender": "@example:example.org",
         "type": "m.room.message",
         "unsigned": {
-          "age": 1234
+          "age": 1235
         }
       }
     ],
@@ -137,10 +138,17 @@ void NeoChatRoomTest::initTestCase()
     room->updateData(std::move(roomData));
 }
 
-void NeoChatRoomTest::testSubtitleTest()
+void NeoChatRoomTest::subtitleTextTest()
 {
-    QVERIFY(room->timelineSize() > 0);
+    QCOMPARE(room->subtitleText(), QStringLiteral("This is an example text message"));
 }
+
+void NeoChatRoomTest::eventTest()
+{
+    QCOMPARE(room->timelineSize(), 1);
+    QCOMPARE(room->timelineSize(), 1);
+}
+
 
 QTEST_MAIN(NeoChatRoomTest)
 #include "neochatroomtest.moc"
