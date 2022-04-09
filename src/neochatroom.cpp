@@ -254,7 +254,7 @@ QDateTime NeoChatRoom::lastActiveTime()
 
 QString NeoChatRoom::subtitleText()
 {
-    QString subtitle = this->lastEventToString().size() == 0 ? this->topic() : this->lastEventToString();
+    QString subtitle = lastEventToString().size() == 0 ? topic() : lastEventToString();
 
     subtitle
         // replace blockquote, i.e. '> text'
