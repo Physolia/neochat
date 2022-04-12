@@ -157,7 +157,7 @@ public:
 
     Q_SCRIPTABLE RemoteActions Actions();
     Q_SCRIPTABLE RemoteMatches Match(const QString &searchTerm);
-    Q_SCRIPTABLE void Run(const QString &id, const QString &actionId);
+    Q_SCRIPTABLE void Run(const QString &id, const QString &actionId, const QString &activationToken = QString());
 
 private:
     RemoteImage serializeImage(const QImage &image);

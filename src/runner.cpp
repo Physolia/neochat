@@ -3,6 +3,8 @@
 
 #include <QDBusMetaType>
 
+#include <KWindowSystem>
+
 #include "controller.h"
 #include "neochatroom.h"
 #include "roomlistmodel.h"
@@ -79,9 +81,11 @@ RemoteMatches Runner::Match(const QString &searchTerm)
     return matches;
 }
 
-void Runner::Run(const QString &id, const QString &actionId)
+void Runner::Run(const QString &id, const QString &actionId, const QString &activationToken)
 {
     Q_UNUSED(actionId);
+
+    KWindowSystem::setCurrentXdgActivationToken(activationToken);
 
     NeoChatRoom *room = qobject_cast<NeoChatRoom *>(Controller::instance().activeConnection()->room(id));
 
